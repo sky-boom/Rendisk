@@ -40,4 +40,5 @@ public class GlobalResult {
     public static ResultData<?> error(ResultCode resultCode) {
         return new ResultData<>(resultCode, null);
     }
+    
 }

@@ -4,7 +4,9 @@ import com.wzr.rendisk.core.GlobalException;
 import com.wzr.rendisk.core.GlobalResult;
 import com.wzr.rendisk.core.ResultCode;
 import com.wzr.rendisk.core.ResultData;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
@@ -15,6 +17,7 @@ import java.util.List;
  * @date 2023-06-01 23:58
  */
 @RestController
+@RequestMapping("/api")
 public class TestController {
     
     @GetMapping("/test")

@@ -17,7 +17,7 @@ public class Utils {
      * 参考：https://blog.csdn.net/PacosonSWJTU/article/details/121502765
      * @return url
      */
-    public static String getCurrentUrlPath() {
+    public static String getRequestUrlPath() {
         HttpServletRequest request =
                 ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest();
         return request.getRequestURI();

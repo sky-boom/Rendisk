@@ -15,9 +15,18 @@ spring:
 #        max-idle: 500
 #        min-idle: 0
   datasource:
-    url: jdbc:mysql://localhost:3306/forest?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    url: jdbc:mysql://localhost:3306/rendisk?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&serverTimezone=Asia/Shanghai&allowMultiQueries=true
     username: root
     password: 300074 # 数据库密码
     driver-class-name: com.mysql.cj.jdbc.Driver
     resources:
       add-mappings: true
+      
+# mybatis映射配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.wzr.rendisk.entity
+  
+my:
+  auth:
+    
