@@ -22,7 +22,7 @@ public class TestController {
     
     @GetMapping("/test")
     public ResultData<?> test() {
-        List<Integer> list = Arrays.asList(1, 2, 3);
+        List<Integer> list = Arrays.asList(1, 2, 3, 4);
         return GlobalResult.success(list);
     }
 
