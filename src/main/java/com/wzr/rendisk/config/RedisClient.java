@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,7 +78,7 @@ public class RedisClient {
      * @param key 可以传一个值 或多个
      */
     @SuppressWarnings("unchecked")
-    public void del(String... key) {
+    public void delKey(String... key) {
         if (key != null && key.length > 0) {
             if (key.length == 1) {
                 redisTemplate.delete(key[0]);
@@ -85,6 +86,42 @@ public class RedisClient {
                 redisTemplate.delete(CollectionUtils.arrayToList(key));
             }
         }
+    }
+
+    /**
+     * 删除指定前缀的key
+     */
+    public void delByPrefix(String keyPrefix) {
+        Set<Object> keys = this.getKeyByPrefix(keyPrefix);
+        if (keys != null) {
+            redisTemplate.delete(keys);
+        }
+    }
+
+    /**
+     * 获取指定前缀的key个数
+     */
+    public int sizeByPrefix(String keyPrefix) {
+        Set<Object> keys = this.getKeyByPrefix(keyPrefix);
+        return keys == null ? 0 : keys.size();
+    }
+
+    /**
+     * 获取指定前缀的key
+     */
+    public Set<Object> getKeyByPrefix(String keyPrefix) {
+        return redisTemplate.keys(keyPrefix + "*");
+    }
+
+    /**
+     * 获取指定前缀key对应的value
+     */
+    public List<Object> getValByPrefix(String keyPrefix) {
+        Set<Object> keys = this.getKeyByPrefix(keyPrefix);
+        if (keys != null && !keys.isEmpty()) {
+            return redisTemplate.opsForValue().multiGet(keys);
+        }
+        return Collections.emptyList();
     }
 
     // ============================String=============================
@@ -95,7 +132,7 @@ public class RedisClient {
      * @param key 键
      * @return 值
      */
-    public Object get(String key) {
+    public Object getKey(String key) {
         return key == null ? null : redisTemplate.opsForValue().get(key);
     }
 
@@ -121,13 +158,13 @@ public class RedisClient {
      *
      * @param key   键
      * @param value 值
-     * @param seconds  时间(秒) time要大于0 如果time小于等于0 将设置无限期
+     * @param expireSeconds  时间(秒) time要大于0 如果time小于等于0 将设置无限期
      * @return true成功 false 失败
      */
-    public boolean set(String key, Object value, long seconds) {
+    public boolean set(String key, Object value, long expireSeconds) {
         try {
-            if (seconds > 0) {
-                redisTemplate.opsForValue().set(key, value, seconds, TimeUnit.SECONDS);
+            if (expireSeconds > 0) {
+                redisTemplate.opsForValue().set(key, value, expireSeconds, TimeUnit.SECONDS);
             } else {
                 set(key, value);
             }
@@ -166,6 +203,15 @@ public class RedisClient {
         return redisTemplate.opsForValue().increment(key, -delta);
     }
 
+    /**
+     * 判断某个键是否存在
+     * @param key 键
+     * @return true: 存在， false: 不存在
+     */
+    public boolean isKeyExists(String key) {
+        return redisTemplate.hasKey(key);
+    }
+    
     // ================================Map=================================
 
     /**

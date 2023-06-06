@@ -1,4 +1,4 @@
-package com.wzr.rendisk.core;
+package com.wzr.rendisk.core.result;
 
 /**
  * 包装返回的结果

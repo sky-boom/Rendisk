@@ -1,4 +1,4 @@
-package com.wzr.rendisk.core;
+package com.wzr.rendisk.core.result;
 
 import com.wzr.rendisk.utils.Utils;
 import lombok.Data;
@@ -28,7 +28,7 @@ public class ResultData<T> {
         this.status = resultCode.getStatus();
         this.message = resultCode.getMessage();
         this.data = data;
-        this.path = Utils.getRequestUrlPath();
+        this.path = Utils.getHttpRequestUrlPath();
         this.timestamp = Instant.now();
     }
 

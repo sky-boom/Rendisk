@@ -1,9 +1,10 @@
-package com.wzr.rendisk.core;
+package com.wzr.rendisk.core.exception;
 
+import com.wzr.rendisk.core.result.GlobalResult;
+import com.wzr.rendisk.core.result.ResultCode;
+import com.wzr.rendisk.core.result.ResultData;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author wzr

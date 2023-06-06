@@ -1,19 +1,19 @@
 server:
-  port: 8001
+  port: 8002
 
 spring:
-#  redis:
-#    host: 192.168.11.129
-#    port: 6379
-#    password: 300074 # redis 密码
-#    database: 1
-#    timeout: 3000
-#    jedis:
-#      pool:
-#        max-active: 8
-#        max-wait: 1
-#        max-idle: 500
-#        min-idle: 0
+  redis:
+    host: 192.168.11.129
+    port: 6378
+    password: 300074 # redis 密码
+    database: 1
+    timeout: 3000
+    jedis:
+      pool:
+        max-active: 8
+        max-wait: 1
+        max-idle: 500
+        min-idle: 0
   datasource:
     url: jdbc:mysql://localhost:3306/rendisk?characterEncoding=UTF-8&autoReconnect=true&useSSL=false&serverTimezone=Asia/Shanghai&allowMultiQueries=true
     username: root
@@ -26,7 +26,18 @@ spring:
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.wzr.rendisk.entity
-  
-my:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    
+# 自定义参数
+my-config:
   auth:
+    # JWT认证加密私钥
+    jwt-secret-key: shiro+jwt+redis
+    # AccessToken过期时间(秒)
+    access-token-expire-time: 20
+    # RefreshToken过期时间(秒)
+    refresh-token-expire-time: 900
+    # shiro内置缓存过期时间（不明白，先设置成refresh的）
+    shiro-cache-expire-time: 900
     

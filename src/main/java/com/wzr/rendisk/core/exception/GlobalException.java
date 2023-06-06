@@ -1,5 +1,6 @@
-package com.wzr.rendisk.core;
+package com.wzr.rendisk.core.exception;
 
+import com.wzr.rendisk.core.result.ResultCode;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

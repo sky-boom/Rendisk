@@ -1,9 +1,9 @@
 package com.wzr.rendisk.controller;
 
-import com.wzr.rendisk.core.GlobalResult;
-import com.wzr.rendisk.core.ResultData;
+import com.wzr.rendisk.core.result.GlobalResult;
+import com.wzr.rendisk.core.result.ResultData;
+import com.wzr.rendisk.dto.UserDto;
 import com.wzr.rendisk.service.IAuthService;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,5 +29,15 @@ public class AuthController {
     public ResultData<Boolean> register(String username, String password, String nickname) {
         boolean result = authService.register(username, password, nickname);
         return GlobalResult.success(result);
+    }
+
+    /**
+     * 用户登录接口
+     * @return 成功，返回token信息。
+     */
+    @PostMapping("/login")
+    public ResultData<UserDto> register(String username, String password) {
+        UserDto userDto = authService.login(username, password);
+        return GlobalResult.success(userDto);
     }
 }

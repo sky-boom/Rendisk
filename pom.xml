@@ -73,6 +73,13 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api -->
+<!--		<dependency>-->
+<!--			<groupId>io.jsonwebtoken</groupId>-->
+<!--			<artifactId>jjwt-api</artifactId>-->
+<!--			<version>0.11.2</version>-->
+<!--		</dependency>-->
+
 
 		<!-- shiro权限控制框架 -->
 		<dependency>
@@ -85,6 +92,13 @@
 					<artifactId>commons-collections</artifactId>
 				</exclusion>
 			</exclusions>
+		</dependency>
+
+		<!-- fastjson -->
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>fastjson</artifactId>
+			<version>2.0.31</version>
 		</dependency>
 		
 		<!-- apache增强工具包（StringUtils、日期增强等） -->
@@ -99,6 +113,13 @@
 			<groupId>org.mybatis.generator</groupId>
 			<artifactId>mybatis-generator-core</artifactId>
 			<version>1.3.4</version>
+		</dependency>
+
+		<!-- 为了方便java对象映射yml配置信息 -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
 		</dependency>
 		
 	</dependencies>

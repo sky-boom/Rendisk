@@ -1,4 +1,4 @@
-package com.wzr.rendisk.core;
+package com.wzr.rendisk.core.result;
 
 /**
  * 结果状态码通用类。返回内容：
@@ -25,10 +25,20 @@ public enum ResultCode {
 
     /*-------------------------- 用户 ---------------------------*/
 
-    /** 前端传递的查询参数为空 (409, 存在冲突) */
-    USER_USERNAME_EMPTY(1005, 409, "用户名已存在! "),
+    /** 用户名已存在 (409, 存在冲突) */
+    USER_USERNAME_EXIST(1005, 409, "用户名已存在! "),
     
-    
+    /** 用户名或密码错误 (404, 资源未找到) */
+    USERNAME_PASSWORD_INCORRECT(1006, 404, "用户名或密码错误! "),
+
+    /** jwt失效或解析失败，尝试重新登录 (401, 需要身份认证验证) */
+    NEED_TO_LOGIN(1007, 401, "认证信息失效，请重新登录! "),
+
+    /** 游客非法访问接口时的错误 (401, 需要身份认证验证) */
+    GUEST_NEED_TO_LOGIN(1008, 401, "无权访问，请先登录用户! "),
+
+
+
     ;
     /** 1. 消息类型唯一标识 */
     private final int code;
