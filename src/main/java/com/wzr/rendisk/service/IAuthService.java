@@ -2,6 +2,7 @@ package com.wzr.rendisk.service;
 
 import com.wzr.rendisk.dto.UserDto;
 import com.wzr.rendisk.entity.User;
+import org.apache.shiro.subject.Subject;
 
 /**
  * 认证业务逻辑
@@ -33,4 +34,12 @@ public interface IAuthService {
      * @return 用户基本信息
      */
     UserDto login(String username, String plainPassword);
+
+    /**
+     * 通过 Shiro 的 subject 对象，找到当前登录的用户。
+     * 原理是，subject中存有当前用户的jwtToken，可以从中解析出用户名，然后查找数据库
+     * @param subject Shiro主体
+     * @return User
+     */
+     User getCurrentUser(Subject subject);
 }

@@ -32,28 +32,27 @@ public interface IFileSystemService {
     /* ================================ 目录相关操作 ================================ */
     /**
      * 【获取文件列表】
-     * @param userId 用户id
+     * @param username 用户id
      * @param parentPath 父虚拟目录
      * @return 文件列表对象
      */
-    FileListDto getList(Long userId, String parentPath);
+    FileListDto getList(String username, String parentPath);
 
     /**
      * 【创建目录】
-     * @param userId 用户id
      * @param folderAddDto 新增文件对象
      */
-    void mkdir(Long userId, FolderAddDto folderAddDto);
+    void mkdir(FolderAddDto folderAddDto);
 
     /* ================================ 通用操作 ================================ */
     /**
      * 检查用户需要创建的目录是否存在
-     * @param userId
+     * @param username
      * @param virtualPath
      * @param type 类型，0-目录，1-文件
      * @return
      */
-    boolean checkVirtPathExist(Long userId, String virtualPath, Integer type);
+    boolean checkVirtPathExist(String username, String virtualPath, Integer type);
 
     /**
      * 删除文件或目录（递归）

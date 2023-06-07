@@ -166,16 +166,16 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         }
     }
 
-    /**
-     * 该方法将在过滤器执行完成后执行
-     * 当isAccessAllowed默认为true时必须实现该方法
-     * 在执行完请求后执行退出登录逻辑，否则下次请求时没有携带将可以直接访问接口，无须重新登录
-     * @param request
-     * @param response
-     * @throws Exception
-     */
-    @Override
-    protected void postHandle(ServletRequest request, ServletResponse response) throws Exception {
-        SecurityUtils.getSubject().logout();
-    }
+//    /**
+//     * 该方法将在过滤器执行完成后执行
+//     * 当isAccessAllowed默认为true时必须实现该方法
+//     * 在执行完请求后执行退出登录逻辑，否则下次请求时没有携带将可以直接访问接口，无须重新登录
+//     * @param request
+//     * @param response
+//     * @throws Exception
+//     */
+//    @Override
+//    protected void postHandle(ServletRequest request, ServletResponse response) throws Exception {
+//        SecurityUtils.getSubject().logout();
+//    }
 }

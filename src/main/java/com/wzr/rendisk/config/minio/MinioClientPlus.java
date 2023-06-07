@@ -8,6 +8,7 @@ import io.minio.messages.Item;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,7 +28,7 @@ import java.util.Optional;
  * @author wzr
  * @date 2023-06-07 15:48
  */
-@Service
+@Component
 @Slf4j
 public class MinioClientPlus {
 
@@ -40,6 +41,7 @@ public class MinioClientPlus {
     @Bean
     public MinioClient getMinioClient() {
         log.debug("[Minio] 初始化 MinioClient...");
+        log.debug("[Minio] 加载服务器: {}", minioProperties.getUrl());
         return MinioClient.builder()
                 .endpoint(minioProperties.getUrl())
                 .credentials(minioProperties.getAccessKey(), minioProperties.getSecretKey())
@@ -351,5 +353,13 @@ public class MinioClientPlus {
     }
 
     /* *****************************  Operate Files End  ******************************/
-    
+
+    /**
+     * 根据用户名获取桶名
+     * @param username
+     * @return
+     */
+    public String getBucketName(String username) {
+        return minioProperties.getBucketNamePrefix() + username;
+    }
 }

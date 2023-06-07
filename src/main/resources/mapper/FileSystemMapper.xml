@@ -80,9 +80,9 @@
   <!-- 插入一个文件夹 -->
   <insert id="addFolder" parameterType="com.wzr.rendisk.entity.FolderInfo">
     INSERT INTO `t_folder`
-      (`id`, `parent_id`, `folder_name`, `virtual_path`, `real_path`, `user_id`)
+      (`parent_id`, `folder_name`, `virtual_path`, `real_path`, `user_id`)
     VALUES
-      (#{id}, #{parentId}, #{folderName}, #{virtualPath}, #{realPath}, #{userId})
+      ( #{parentId}, #{folderName}, #{virtualPath}, #{realPath}, #{userId})
   </insert>
 
   <!-- 删除当前目录及所有子目录 -->

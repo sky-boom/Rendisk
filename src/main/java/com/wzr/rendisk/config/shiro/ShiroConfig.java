@@ -35,14 +35,14 @@ public class ShiroConfig {
         DefaultWebSecurityManager manager = new DefaultWebSecurityManager();
         // 使用自定义Realm
         manager.setRealm(jwtRealmPlus);
-        // 关闭Shiro自带的session
-        DefaultSubjectDAO subjectDAO = new DefaultSubjectDAO();
-        DefaultSessionStorageEvaluator defaultSessionStorageEvaluator = new DefaultSessionStorageEvaluator();
-        defaultSessionStorageEvaluator.setSessionStorageEnabled(false);
-        subjectDAO.setSessionStorageEvaluator(defaultSessionStorageEvaluator);
-        manager.setSubjectDAO(subjectDAO);
-        // 设置自定义Cache缓存
-        manager.setCacheManager(customCacheManager);
+//        // 关闭Shiro自带的session
+//        DefaultSubjectDAO subjectDAO = new DefaultSubjectDAO();
+//        DefaultSessionStorageEvaluator defaultSessionStorageEvaluator = new DefaultSessionStorageEvaluator();
+//        defaultSessionStorageEvaluator.setSessionStorageEnabled(false);
+//        subjectDAO.setSessionStorageEvaluator(defaultSessionStorageEvaluator);
+//        manager.setSubjectDAO(subjectDAO);
+//        // 设置自定义Cache缓存
+//        manager.setCacheManager(customCacheManager);
         return manager;
     }
 
@@ -74,21 +74,10 @@ public class ShiroConfig {
      */
     @Bean("jwtRealmPlus")
     public JwtRealm shiroRealm(CustomCacheManager manager, JwtRealm jwtRealm){
-//        JwtRealm shiroRealm = new JwtRealm();
-//        shiroRealm.setCachingEnabled(true);
-//        //启用身份验证缓存，即缓存AuthenticationInfo信息，默认false
-//        shiroRealm.setAuthenticationCachingEnabled(true);
-//        //缓存AuthenticationInfo信息的缓存名称 在ehcache-shiro.xml中有对应缓存的配置
-//        shiroRealm.setAuthenticationCacheName("authenticationCache");
-//        //启用授权缓存，即缓存AuthorizationInfo信息，默认false
-//        shiroRealm.setAuthorizationCachingEnabled(true);
-//        //缓存AuthorizationInfo信息的缓存名称  在ehcache-shiro.xml中有对应缓存的配置
-//        shiroRealm.setAuthorizationCacheName("authorizationCache");
-//        return shiroRealm;
-        //开启缓存
-        jwtRealm.setCachingEnabled(true);
-        //注入缓存管理器
-        jwtRealm.setCacheManager(manager); 
+//        //开启缓存
+//        jwtRealm.setCachingEnabled(true);
+//        //注入缓存管理器
+//        jwtRealm.setCacheManager(manager); 
         return jwtRealm;
     }
 

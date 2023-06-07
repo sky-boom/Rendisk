@@ -1,6 +1,7 @@
 package com.wzr.rendisk.utils;
 
 import com.wzr.rendisk.config.shiro.JwtRealm;
+import com.wzr.rendisk.entity.User;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.mgt.RealmSecurityManager;

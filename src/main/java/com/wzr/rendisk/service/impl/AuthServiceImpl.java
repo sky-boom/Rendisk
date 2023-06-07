@@ -8,9 +8,12 @@ import com.wzr.rendisk.entity.User;
 import com.wzr.rendisk.mapper.UserMapper;
 import com.wzr.rendisk.service.IAuthService;
 import com.wzr.rendisk.service.ITokenService;
+import com.wzr.rendisk.utils.JwtUtils;
 import com.wzr.rendisk.utils.UserUtils;
 import com.wzr.rendisk.utils.HttpUtils;
+import io.jsonwebtoken.Claims;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -76,5 +79,12 @@ public class AuthServiceImpl implements IAuthService {
             return userDto;
         }
         throw new GlobalException(ResultCode.USERNAME_PASSWORD_INCORRECT);
+    }
+
+    @Override
+    public User getCurrentUser(Subject subject) {
+        String jwtToken = (String) subject.getPrincipal();
+        Claims parse = JwtUtils.parse(jwtToken);
+        return getUserByUsername(parse.getSubject());
     }
 }

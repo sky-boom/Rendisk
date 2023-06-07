@@ -2,6 +2,7 @@ package com.wzr.rendisk.mapper;
 
 import com.wzr.rendisk.entity.FileInfo;
 import com.wzr.rendisk.entity.FolderInfo;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
  * @author wzr
  * @date 2023-06-07 10:09
  */
+@Mapper
 public interface FileSystemMapper {
     /*===================== 文件相关操作 ======================*/
     /**
