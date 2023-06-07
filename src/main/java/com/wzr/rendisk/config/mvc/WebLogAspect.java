@@ -1,4 +1,4 @@
-package com.wzr.rendisk.config;
+package com.wzr.rendisk.config.mvc;
 
 import com.wzr.rendisk.config.redis.RedisClient;
 import com.wzr.rendisk.core.constant.JwtConstant;
