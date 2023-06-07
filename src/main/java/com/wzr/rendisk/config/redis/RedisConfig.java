@@ -1,4 +1,4 @@
-package com.wzr.rendisk.config;
+package com.wzr.rendisk.config.redis;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;

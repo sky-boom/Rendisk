@@ -1,17 +1,15 @@
 package com.wzr.rendisk.config.shiro.cache;
 
 import com.wzr.rendisk.config.AuthProperties;
-import com.wzr.rendisk.config.RedisClient;
+import com.wzr.rendisk.config.redis.RedisClient;
 import com.wzr.rendisk.core.constant.JwtConstant;
 import com.wzr.rendisk.utils.JwtUtils;
-import com.wzr.rendisk.utils.SpringContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.cache.Cache;
 import org.apache.shiro.cache.CacheException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.*;
 
 /**

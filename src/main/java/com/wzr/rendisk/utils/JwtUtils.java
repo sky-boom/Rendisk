@@ -1,11 +1,9 @@
 package com.wzr.rendisk.utils;
 
 import com.wzr.rendisk.config.AuthProperties;
-import com.wzr.rendisk.core.constant.JwtConstant;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * jwt 相关工具类

@@ -1,19 +1,16 @@
 package com.wzr.rendisk.service.impl;
 
 import com.wzr.rendisk.config.AuthProperties;
-import com.wzr.rendisk.config.RedisClient;
+import com.wzr.rendisk.config.redis.RedisClient;
 import com.wzr.rendisk.core.constant.JwtConstant;
 import com.wzr.rendisk.service.ITokenService;
-import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -69,6 +66,7 @@ public class TokenServiceImpl implements ITokenService {
 
     @Override
     public String refreshToken(String username) {
+        log.info("=========================================");
         log.info("用户{}的accessToken已过期，准备重新生成...", username);
         // 当前时间实例
         Instant currentTime = Instant.now();
@@ -80,6 +78,8 @@ public class TokenServiceImpl implements ITokenService {
         // 创建 redis accessToken
         String accessTokenKey = JwtConstant.PREFIX_SHIRO_ACCESS_TOKEN + username;
         redisClient.set(accessTokenKey, currentTimestamp, authProperties.getAccessTokenExpireTime());
+        log.info("新生成的jwtTimestamp = {}", currentTimestamp);
+        log.info("=========================================");
         // 创建新的 jwt accessToken 并返回
         return Jwts.builder()
                 .setHeaderParam("typ", "JWT")

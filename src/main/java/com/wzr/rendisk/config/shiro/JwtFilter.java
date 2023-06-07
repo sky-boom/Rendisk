@@ -7,6 +7,7 @@ import com.wzr.rendisk.core.result.ResultCode;
 import io.jsonwebtoken.JwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
 import org.slf4j.Logger;
@@ -163,5 +164,18 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
             // 错误日志
             log.error(e.getMessage());
         }
+    }
+
+    /**
+     * 该方法将在过滤器执行完成后执行
+     * 当isAccessAllowed默认为true时必须实现该方法
+     * 在执行完请求后执行退出登录逻辑，否则下次请求时没有携带将可以直接访问接口，无须重新登录
+     * @param request
+     * @param response
+     * @throws Exception
+     */
+    @Override
+    protected void postHandle(ServletRequest request, ServletResponse response) throws Exception {
+        SecurityUtils.getSubject().logout();
     }
 }

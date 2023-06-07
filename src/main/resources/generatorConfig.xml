@@ -40,7 +40,7 @@
         </javaClientGenerator>
         <!--生成对应表及类名-->
         
-        <table tableName="t_user" domainObjectName="User"
+        <table tableName="t_file" domainObjectName="File"
                enableCountByExample="false"
                enableUpdateByExample="false"
                enableDeleteByExample="false"

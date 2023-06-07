@@ -21,7 +21,24 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     resources:
       add-mappings: true
-      
+  # 配置允许上传文件大小
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
+
+# 日志级别设置
+logging:
+  level:
+    com.wzr.rendisk: debug
+
+# minio自定义配置
+minio:
+  url: 192.168.11.129:9000 #换成自己的minio服务端地址
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name-prefix: rendisk- # 桶前缀名
+
 # mybatis映射配置
 mybatis:
   mapper-locations: classpath:mapper/*.xml
@@ -35,7 +52,7 @@ my-config:
     # JWT认证加密私钥
     jwt-secret-key: shiro+jwt+redis
     # AccessToken过期时间(秒)
-    access-token-expire-time: 20
+    access-token-expire-time: 900
     # RefreshToken过期时间(秒)
     refresh-token-expire-time: 900
     # shiro内置缓存过期时间（不明白，先设置成refresh的）

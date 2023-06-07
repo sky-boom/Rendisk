@@ -1,14 +1,13 @@
 package com.wzr.rendisk.config.shiro;
 
-import com.wzr.rendisk.config.RedisClient;
+import com.wzr.rendisk.config.redis.RedisClient;
 import com.wzr.rendisk.core.constant.JwtConstant;
-import com.wzr.rendisk.entity.User;
 import com.wzr.rendisk.service.IAuthService;
 import com.wzr.rendisk.service.ITokenService;
 import com.wzr.rendisk.utils.JwtUtils;
-import com.wzr.rendisk.utils.Utils;
+import com.wzr.rendisk.utils.HttpUtils;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
@@ -24,6 +23,7 @@ import org.springframework.stereotype.Component;
  * @author wzr
  * @date 2023-06-05 17:13
  */
+@Slf4j
 @Component
 public class JwtRealm extends AuthorizingRealm {
     
@@ -87,7 +87,7 @@ public class JwtRealm extends AuthorizingRealm {
                         // accessToken 过期了，则续签一个token，再交给shiro保管
                         String newToken = tokenService.refreshToken(username);
                         // 设置到请求头，返回给前端
-                        Utils.getCurrentHttpResponse().setHeader(JwtConstant.JWT_HEADER_NAME, newToken);
+                        HttpUtils.getCurrentHttpResponse().setHeader(JwtConstant.JWT_HEADER_NAME, newToken);
                         return new SimpleAuthenticationInfo(newToken, newToken, "userRealm");
                     }
                 }

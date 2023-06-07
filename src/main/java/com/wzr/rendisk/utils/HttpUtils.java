@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse;
  * @author wzr
  * @date 2023-06-01 23:21
  */
-public class Utils {
+public class HttpUtils {
 
     /**
      * 用于获取当前请求的url

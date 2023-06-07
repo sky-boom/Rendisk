@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wzr.rendisk.mapper.FileSystemMapper">
+  <!-- 通用查询映射结果 -->
+  <resultMap id="FileResultMap" type="com.wzr.rendisk.entity.FileInfo">
+    <id column="id" property="id" />
+    <result column="parent_id" property="parentId" />
+    <result column="file_name" property="fileName" />
+    <result column="real_path" property="realPath" />
+    <result column="file_size" property="fileSize" />
+    <result column="user_id" property="userId" />
+    <result column="create_time" property="createTime" />
+    <result column="update_time" property="updateTime" />
+  </resultMap>
+
+  <resultMap id="FolderResultMap" type="com.wzr.rendisk.entity.FolderInfo">
+    <id column="id" property="id" />
+    <result column="parent_id" property="parentId" />
+    <result column="folder_name" property="folderName" />
+    <result column="real_path" property="realPath" />
+    <result column="virtual_path" property="virtualPath" />
+    <result column="user_id" property="userId" />
+    <result column="create_time" property="createTime" />
+    <result column="update_time" property="updateTime" />
+  </resultMap>
+
+  <!-- ============================================ ↓文件相关操作↓ ============================================== -->
+  <!-- 查询文件列表 -->
+  <select id="queryFileListById" resultMap="FileResultMap">
+    SELECT f.`file_name`, f.`virtual_path`, f.`file_size`, u.`nickname`, f.`create_time`, f.`update_time`
+    FROM `t_file` AS f
+           LEFT JOIN `t_user` AS u ON u.`id` = f.`user_id`
+    WHERE f.`user_id` = #{userId} AND f.`parent_id` = #{parentId};
+  </select>
+
+  <!-- 查询单条记录-通过userId和virtualPath -->
+  <select id="queryFileByPath" resultMap="FileResultMap">
+    SELECT f.`id`, f.`file_name`, f.`real_path`, f.`virtual_path`, f.`file_size`, f.`user_id`, f.`create_time`, f.`update_time`
+    FROM `t_file` AS f
+    WHERE f.`user_id` = #{userId} AND f.`virtual_path` = #{virtualPath};
+  </select>
+
+  <!-- 插入一个文件 -->
+  <insert id="addFile">
+    INSERT INTO `t_file`
+    (`id`, `parent_id`, `file_name`, `real_path`, `virtual_path`, `file_size`, `user_id`)
+    VALUES
+    (#{id}, #{parentId}, #{fileName}, #{realPath}, #{virtualPath}, #{fileSize}, #{userId} )
+  </insert>
+
+  <!-- 删除单个文件 -->
+  <delete id="deleteFileByPath">
+    DELETE FROM `t_file`
+    WHERE `user_id` = #{userId} AND `virtual_path` = #{virtualPath}
+  </delete>
+
+  <!-- 重命名文件 -->
+  <update id="renameFile">
+    UPDATE `t_file` SET `file_name` = #{newInfo.fileName},
+                        `virtual_path` = #{newInfo.virtualPath},
+                        `real_path` = #{newInfo.realPath}
+    WHERE `user_id` = #{oldInfo.userId} AND `virtual_path` = #{oldInfo.virtualPath};
+  </update>
+  <!-- ============================================ ↓目录相关操作↓ ============================================== -->
+  <!-- 查询目录列表 -->
+  <select id="queryFolderListById" resultMap="FolderResultMap">
+    SELECT f.`folder_name`, f.`virtual_path`, u.`nickname`, f.`create_time`, f.`update_time`
+    FROM `t_folder` AS f
+           LEFT JOIN `t_user` AS u ON u.`id` = f.`user_id`
+    WHERE f.`user_id` = #{userId} AND f.`parent_id` = #{parentId};
+  </select>
+
+  <!-- 查询单条记录-通过userId和virtualPath -->
+  <select id="queryFolderByPath" resultMap="FolderResultMap">
+    SELECT f.`id`, f.`folder_name`, f.`real_path`, f.`virtual_path`, f.`user_id`, f.`create_time`, f.`update_time`
+    FROM `t_folder` AS f
+    WHERE f.`user_id` = #{userId} AND f.`virtual_path` = #{virtualPath};
+  </select>
+
+  <!-- 插入一个文件夹 -->
+  <insert id="addFolder" parameterType="com.wzr.rendisk.entity.FolderInfo">
+    INSERT INTO `t_folder`
+      (`id`, `parent_id`, `folder_name`, `virtual_path`, `real_path`, `user_id`)
+    VALUES
+      (#{id}, #{parentId}, #{folderName}, #{virtualPath}, #{realPath}, #{userId})
+  </insert>
+
+  <!-- 删除当前目录及所有子目录 -->
+  <delete id="deleteFolder">
+    DELETE FROM `t_folder` WHERE `user_id` = #{userId}
+                             AND (`virtual_path` like concat(#{virtualPath}, '/%') OR `virtual_path` = #{virtualPath})
+  </delete>
+
+  <!-- 重命名当前目录及更新所有子目录路径 -->
+  <update id="renameFolder">
+    UPDATE `t_folder` SET `folder_name` = #{newInfo.folderName},
+                          `virtual_path` = #{newInfo.virtualPath},
+                          `real_path` = #{newInfo.realPath}
+    WHERE `user_id` = #{oldInfo.userId} AND `virtual_path` = #{oldInfo.virtualPath};
+    UPDATE `t_folder` SET `virtual_path` = replace(`virtual_path`, #{oldInfo.virtualPath}, #{newInfo.virtualPath})
+    WHERE `virtual_path` LIKE concat(#{oldInfo.virtualPath}, '/%');
+  </update>
+
+  <!-- ============================================ ↓其他通用查询↓ ============================================== -->
+
+  <!-- 根据userId和virtualPath查询 虚拟路径是否存在 -->
+  <select id="queryVirtPathExist" resultType="java.lang.Object">
+    SELECT * FROM
+    <if test="type == @com.wzr.cloud.base.constant.Cloudisk@FOLDER_TYPE_CODE ">`t_folder`</if>
+    <if test="type == @com.wzr.cloud.base.constant.Cloudisk@FILE_TYPE_CODE ">`t_file`</if>
+    WHERE `user_id` = #{userId} AND `virtual_path` = #{virtualPath}
+  </select>
+
+  <select id="queryFolderPathById" resultType="java.lang.String">
+    SELECT `virtual_path` FROM `t_folder`
+    WHERE `user_id` = #{userId} AND `id` = #{folderId}
+  </select>
+
+  <select id="queryFolderIdByPath" resultType="java.lang.Long">
+    SELECT `id` FROM `t_folder`
+    WHERE `user_id` = #{userId} AND `virtual_path` = #{virtualPath}
+  </select>
+</mapper>

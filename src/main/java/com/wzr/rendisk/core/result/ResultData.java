@@ -1,6 +1,6 @@
 package com.wzr.rendisk.core.result;
 
-import com.wzr.rendisk.utils.Utils;
+import com.wzr.rendisk.utils.HttpUtils;
 import lombok.Data;
 
 import java.time.Instant;
@@ -28,7 +28,7 @@ public class ResultData<T> {
         this.status = resultCode.getStatus();
         this.message = resultCode.getMessage();
         this.data = data;
-        this.path = Utils.getHttpRequestUrlPath();
+        this.path = HttpUtils.getHttpRequestUrlPath();
         this.timestamp = Instant.now();
     }
 

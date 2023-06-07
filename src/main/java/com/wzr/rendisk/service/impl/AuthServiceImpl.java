@@ -9,7 +9,7 @@ import com.wzr.rendisk.mapper.UserMapper;
 import com.wzr.rendisk.service.IAuthService;
 import com.wzr.rendisk.service.ITokenService;
 import com.wzr.rendisk.utils.UserUtils;
-import com.wzr.rendisk.utils.Utils;
+import com.wzr.rendisk.utils.HttpUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -66,7 +66,7 @@ public class AuthServiceImpl implements IAuthService {
         if (user != null && UserUtils.validatePassword(plainPassword, user.getPassword()) ) {
             // 验证通过，可以颁发jwt
             String jwtToken = tokenService.createToken(username);
-            HttpServletResponse response = Utils.getCurrentHttpResponse();
+            HttpServletResponse response = HttpUtils.getCurrentHttpResponse();
             response.setHeader(JwtConstant.JWT_HEADER_NAME, jwtToken);
             UserDto userDto = new UserDto();
             userDto.setUsername(username);

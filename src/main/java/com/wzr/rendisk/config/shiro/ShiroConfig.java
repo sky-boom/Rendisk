@@ -64,7 +64,7 @@ public class ShiroConfig {
         // 其他请求通过自定义jwtFilter
         filterRuleMap.put("/api/v1/folder/**", "jwt");
         filterRuleMap.put("/api/v1/file/**", "jwt");
-
+        filterRuleMap.put("/api/v1/test/**", "jwt");
         factoryBean.setFilterChainDefinitionMap(filterRuleMap);
         return factoryBean;
     }
