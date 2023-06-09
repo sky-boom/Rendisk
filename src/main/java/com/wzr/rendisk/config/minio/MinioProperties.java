@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 @Component
-@ConfigurationProperties(prefix = "minio")
+@ConfigurationProperties(prefix = "my-config.minio")
 public class MinioProperties {
 
     /**

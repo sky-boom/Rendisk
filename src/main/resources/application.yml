@@ -32,22 +32,16 @@ logging:
   level:
     com.wzr.rendisk: debug
 
-# minio自定义配置
-minio:
-  url: http://192.168.12.133:9000 #换成自己的minio服务端地址
-  access-key: minioadmin
-  secret-key: minioadmin
-  bucket-name-prefix: rendisk- # 桶前缀名
-
 # mybatis映射配置
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.wzr.rendisk.entity
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    
+
 # 自定义参数
 my-config:
+  # 认证相关配置
   auth:
     # JWT认证加密私钥
     jwt-secret-key: shiro+jwt+redis
@@ -58,3 +52,14 @@ my-config:
     # shiro内置缓存过期时间（不明白，先设置成refresh的）
     shiro-cache-expire-time: 9000
     
+  # minio自定义配置
+  minio:
+    url: http://192.168.12.133:9000 #换成自己的minio服务端地址
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket-name-prefix: rendisk- # 桶前缀名
+
+  # elasticsearch自定义配置
+  elasticsearch:
+    url: localhost
+    port: 9200  
