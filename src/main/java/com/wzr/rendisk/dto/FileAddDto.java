@@ -22,10 +22,4 @@ public class FileAddDto {
      * 父目录路径
      */
     private String parentPath;
-
-    /**
-     * 即将创建的虚拟路径
-     */
-    @Nullable
-    private String currVirtPath;
 }

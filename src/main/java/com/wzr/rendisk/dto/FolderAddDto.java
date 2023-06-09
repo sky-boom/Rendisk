@@ -11,10 +11,6 @@ import org.springframework.lang.Nullable;
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class FolderAddDto {
-    /**
-     * 用户名
-     */
-    private String username;
     
     /**
      * 父目录虚拟路径
@@ -25,10 +21,4 @@ public class FolderAddDto {
      * 即将创建的名字
      */
     private String addName;
-
-    /**
-     * 即将创建的目录路径
-     */
-    @Nullable
-    private String currVirtPath;
 }

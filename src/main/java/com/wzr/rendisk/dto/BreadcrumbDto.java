@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class FileBreadcrumbDto {
+public class BreadcrumbDto {
 
     /**
      * 当前目录名字
@@ -22,7 +22,7 @@ public class FileBreadcrumbDto {
      */
     String currVirtPath;
 
-    public FileBreadcrumbDto(String currPathName, String currVirtPath) {
+    public BreadcrumbDto(String currPathName, String currVirtPath) {
         this.currPathName = currPathName;
         this.currVirtPath = currVirtPath;
     }

@@ -4,6 +4,7 @@ import com.wzr.rendisk.config.AuthProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * jwt 相关工具类
@@ -11,6 +12,7 @@ import io.jsonwebtoken.Jwts;
  * @author wzr
  * @date 2023-06-04 18:26
  */
+@Slf4j
 public class JwtUtils {
     
     private static final AuthProperties authProperties = SpringContextHolder.getBean(AuthProperties.class);
@@ -26,7 +28,7 @@ public class JwtUtils {
             return Jwts.parser().setSigningKey(authProperties.getJwtSecretKey())
                     .parseClaimsJws(jwtToken).getBody();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
             throw new JwtException("jwt解析失败!");
         }
     }

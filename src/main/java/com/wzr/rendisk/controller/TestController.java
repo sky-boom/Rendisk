@@ -22,7 +22,7 @@ import java.util.List;
  * @date 2023-06-01 23:58
  */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/test")
 public class TestController {
     
     @Autowired
@@ -30,13 +30,16 @@ public class TestController {
     @Autowired
     private IAuthService authService;
     
-    @RequestMapping("/test")
+    /** 
+     *  /test/jwt/** 需要jwt认证
+     */
+    @RequestMapping("/jwt/1")
     public ResultData<?> test() {
         List<Integer> list = Arrays.asList(1, 2, 3, 4);
         return GlobalResult.success(list);
     }
 
-    @RequestMapping("/test2")
+    @RequestMapping("/jwt/2")
     public ResultData<?> test2() {
         List<Integer> list = Arrays.asList(1, 2, 3);
         if (true) {
@@ -45,7 +48,7 @@ public class TestController {
         return GlobalResult.success(list);
     }
 
-    @RequestMapping("/test3")
+    @RequestMapping("/jwt/3")
     public ResultData<?> test3() {
         List<Integer> list = Arrays.asList(1, 2, 3);
         if (true) {
@@ -54,22 +57,41 @@ public class TestController {
         return GlobalResult.success(list);
     }
 
-    @RequestMapping("/test4")
-    public ResultData<?> test4() {
-        String bucketName = minioClientPlus.getBucketName("test");
-        boolean folderExist = minioClientPlus.isFolderExist(bucketName, "/1/2/3");
+    private static final String bucketName = "rendisk-wzr";
+    
+    @RequestMapping("/folder/exist")
+    public ResultData<?> folderExist(String name) {
+        // 是否存在
+        boolean folderExist = minioClientPlus.isFolderExist(bucketName, name);
         return GlobalResult.success(folderExist);
     }
 
-    @RequestMapping("/test5")
-    public ResultData<?> test5() throws Exception {
-        String bucketName = minioClientPlus.getBucketName("test");
-        ObjectWriteResponse result = minioClientPlus.createFolder(bucketName, "/my2/insight2");
-        return GlobalResult.success(result.toString());
+    @RequestMapping("/folder/create")
+    public ResultData<?> test5(String name) throws Exception {
+        // 创建目录
+        ObjectWriteResponse result = minioClientPlus.createFolder(bucketName, name);
+        return GlobalResult.success(result.versionId());
     }
 
-    @RequestMapping("/test6")
-    public ResultData<?> test6(){;
-        return GlobalResult.success(authService.getCurrentUser(SecurityUtils.getSubject()));
+    @RequestMapping("/file/remove")
+    public ResultData<?> test6(String name) {
+        // 删除目录
+        try {
+            minioClientPlus.removeFile(bucketName, name);
+        } catch (Exception e) {
+            throw new GlobalException();
+        }
+        return GlobalResult.success();
+    }
+
+    @RequestMapping("/folder/remove")
+    public ResultData<?> test7(String name) {
+        // 删除目录
+        try {
+            minioClientPlus.removeFolder(bucketName, name);
+        } catch (Exception e) {
+            throw new GlobalException();
+        }
+        return GlobalResult.success();
     }
 }

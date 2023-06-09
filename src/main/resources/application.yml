@@ -3,7 +3,7 @@ server:
 
 spring:
   redis:
-    host: 192.168.11.133
+    host: 192.168.12.133
     port: 6378
     password: 300074 # redis 密码
     database: 1
@@ -34,7 +34,7 @@ logging:
 
 # minio自定义配置
 minio:
-  url: http://192.168.11.133:9000 #换成自己的minio服务端地址
+  url: http://192.168.12.133:9000 #换成自己的minio服务端地址
   access-key: minioadmin
   secret-key: minioadmin
   bucket-name-prefix: rendisk- # 桶前缀名
@@ -52,9 +52,9 @@ my-config:
     # JWT认证加密私钥
     jwt-secret-key: shiro+jwt+redis
     # AccessToken过期时间(秒)
-    access-token-expire-time: 900
+    access-token-expire-time: 9000
     # RefreshToken过期时间(秒)
-    refresh-token-expire-time: 900
+    refresh-token-expire-time: 9000
     # shiro内置缓存过期时间（不明白，先设置成refresh的）
-    shiro-cache-expire-time: 900
+    shiro-cache-expire-time: 9000
     

@@ -2,6 +2,8 @@ package com.wzr.rendisk.dto;
 
 import com.wzr.rendisk.entity.FileInfo;
 import com.wzr.rendisk.entity.FolderInfo;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -11,6 +13,8 @@ import java.util.List;
  * @author wzr
  * @date 2023-06-07 11:10
  */
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class FileListDto {
     /**
      * 父目录
@@ -23,7 +27,7 @@ public class FileListDto {
      * 则列表 = path = ["/test", "/test/mydir", "/test/mydir/haha"]
      *         name = ["test",        "mydir"              "haha"]
      */
-    private List<FileBreadcrumbDto> breadcrumbList;
+    private List<BreadcrumbDto> breadcrumbList;
 
     /**
      * 目录列表

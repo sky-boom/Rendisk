@@ -1,11 +1,14 @@
 package com.wzr.rendisk.config.minio;
 
 import io.minio.*;
+import io.minio.errors.*;
 import io.minio.http.Method;
 import io.minio.messages.Bucket;
+import io.minio.messages.DeleteError;
 import io.minio.messages.DeleteObject;
 import io.minio.messages.Item;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -13,9 +16,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -150,17 +156,19 @@ public class MinioClientPlus {
     /**
      * 判断文件夹是否存在
      * @param bucketName 存储桶
-     * @param folderName 文件夹名称
+     * @param folderName 目录名称：本项目约定路径是以"/"开头，不以"/"结尾
      * @return true: 存在
      */
     public boolean isFolderExist(String bucketName, String folderName) {
+        folderName = trimHead(folderName);
         boolean exist = false;
         try {
             Iterable<Result<Item>> results = minioClient.listObjects(
                     ListObjectsArgs.builder().bucket(bucketName).prefix(folderName).recursive(false).build());
             for (Result<Item> result : results) {
                 Item item = result.get();
-                if (item.isDir() && folderName.equals(item.objectName())) {
+                String objectName = addTail( folderName );
+                if (item.isDir() && objectName.equals( item.objectName() )) {
                     exist = true;
                 }
             }
@@ -171,11 +179,13 @@ public class MinioClientPlus {
     }
 
     /**
-     * 创建文件夹或目录
+     * 创建目录
      * @param bucketName 存储桶
-     * @param folderName 目录路径
+     * @param folderName 目录路径：本项目约定路径是以"/"开头，不以"/"结尾
      */
     public ObjectWriteResponse createFolder(String bucketName, String folderName) throws Exception {
+        // 这是minio的bug，只有在路径的尾巴加上"/"，才能当成文件夹。
+        folderName = addTail(folderName);
         return minioClient.putObject(
                 PutObjectArgs.builder()
                         .bucket(bucketName)
@@ -284,16 +294,62 @@ public class MinioClientPlus {
     }
 
     /**
+     * 删除文件夹
+     * @param bucketName 存储桶
+     * @param fileName 路径
+     */
+    public void removeFolder(String bucketName, String fileName) throws Exception {
+//        try {
+//            path = addTail(path);
+//            Iterable<Result<Item>> listObjects = this.minioClient.listObjects(ListObjectsArgs.builder()
+//                    .bucket(bucketName)
+//                    .prefix(path)
+//                    .build());
+//            List<DeleteObject> objects = new LinkedList<>();
+//            listObjects.forEach(item -> {
+//                try {
+//                    objects.add(new DeleteObject(item.get().objectName()));
+//                } catch (Exception ex) {
+//                    ex.printStackTrace();
+//                }
+//            });
+//            if (objects.size() > 0) {
+//                Iterable<Result<DeleteError>> results = this.minioClient.removeObjects(RemoveObjectsArgs.builder()
+//                        .bucket(bucketName)
+//                        .objects(objects)
+//                        .build());
+//                for (Result<DeleteError> result : results) {
+//                    DeleteError error = result.get();
+//                    log.error("删除对象 ---> " + error.objectName() + " 发生错误 --->" + error.message());
+//                }
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return false;
+//        }
+//        return true;
+        // 加尾
+        fileName = addTail(fileName);
+        minioClient.removeObject(
+                RemoveObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(fileName)
+                        .build());
+    }
+
+    /**
      * 删除文件
      * @param bucketName 存储桶
      * @param fileName 文件名称
      */
     public void removeFile(String bucketName, String fileName) throws Exception {
-         minioClient.removeObject(
-                 RemoveObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .build());
+        // 掐头
+        fileName = trimHead(fileName);
+        minioClient.removeObject(
+             RemoveObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(fileName)
+                    .build());
     }
 
     /**
@@ -355,11 +411,20 @@ public class MinioClientPlus {
     /* *****************************  Operate Files End  ******************************/
 
     /**
-     * 根据用户名获取桶名
-     * @param username
-     * @return
+     * 把路径开头的"/"去掉，并在末尾添加"/"，这个是minio对象名的样子。
+     * @param projectPath 本项目习惯使用的路径，默认以"/"开头。
+     * @return 去掉开头"/"
      */
-    public String getBucketName(String username) {
-        return minioProperties.getBucketNamePrefix() + username;
+    private static String trimHead(String projectPath) {
+        return projectPath.substring(1);
+    }
+
+    /**
+     * 把路径开头的"/"去掉，并在末尾添加"/"，这个是minio对象名的样子。
+     * @param projectPath 本项目习惯使用的路径，默认以"/"开头。
+     * @return 添加结尾"/"
+     */
+    private static String addTail(String projectPath) {
+        return projectPath + "/";
     }
 }

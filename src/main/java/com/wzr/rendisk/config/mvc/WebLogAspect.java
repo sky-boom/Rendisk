@@ -13,6 +13,12 @@ import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.Map;
 
 /**
  * 日志打印切面类
@@ -43,10 +49,11 @@ public class WebLogAspect {
     @Before("webLog()")
     public void doBefore(JoinPoint joinPoint) {
         // 接收到请求，记录请求内容
-        log.info("=========================================");
-        log.info("WebLogAspect.doBefore()");
+        log.info("");
+        log.info("—————————————————————— start ——————————————————————");
+        log.info("\tWebLogAspect.doBefore()");
         // 记录下请求内容
-        log.info("URL : " + HttpUtils.getHttpRequestUrlPath());
+        log.info("\tURL : " + HttpUtils.getHttpRequestUrlPath());
         String token = HttpUtils.getCurrentHttpRequest().getHeader(JwtConstant.JWT_HEADER_NAME);
         if (StringUtils.isNotEmpty(token)) {
             try {
@@ -54,14 +61,21 @@ public class WebLogAspect {
                 String username = claims.getSubject();
                 long timestamp = ((Integer) claims.get(JwtConstant.JWT_TIMESTAMP_FIELD)).longValue();
                 long redisTimestamp = ((Integer) redisClient.getKey(JwtConstant.PREFIX_SHIRO_REFRESH_TOKEN + username)).longValue();
-                log.info("JWT : username={}, jwtTimestamp={}, redisTimestamp={}", username, timestamp, redisTimestamp);
+                log.info("\tJWT : username={}, jwtTimestamp={}, redisTimestamp={}", username, timestamp, redisTimestamp);
             } catch (Exception e) {
-                log.error("解析jwt时出现错误。");
+                log.error("\t解析jwt时出现错误。");
             }
         } else {
-            log.info("请求头中未检查到有jwt");
+            log.info("\t请求头中未检查到有jwt");
         }
-        log.info("=========================================");
+        HttpServletRequest request = HttpUtils.getCurrentHttpRequest();
+        //获取全部请求参数
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        int i = 1;
+        for (Map.Entry<String, String[]> entry: parameterMap.entrySet()) {
+            log.info("\t参数{} : {} = {}", i ++,  entry.getKey(), Arrays.toString(entry.getValue()) );
+        }
+        log.info("——————————————————————  end ———————————————————————");
     }
     
 }

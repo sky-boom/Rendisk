@@ -14,24 +14,61 @@ import java.util.List;
  */
 @Mapper
 public interface FileSystemMapper {
-    /*===================== 文件相关操作 ======================*/
-    /**
-     * 获取【文件列表】
-     * @param userId
-     * @param parentId
-     * @return
-     */
-    List<FileInfo> queryFileListById(@Param("userId") Long userId,
-                                     @Param("parentId") Long parentId);
 
     /**
-     * 查询【单个文件】
-     * @param userId
-     * @param virtualPath
-     * @return
+     * 【创建目录】
+     * @param folderInfo 目录
+     * @return 响应行数
      */
-    FileInfo queryFileByPath(@Param("userId") Long userId,
-                             @Param("virtualPath") String virtualPath);
+    int insertFolder(FolderInfo folderInfo);
+    
+    /**
+     * 根据虚拟路径查询目录id
+     * @param virtualPath 虚拟路径
+     * @return 目录id
+     */
+    Long getFolderIdByPath(@Param("userId") Long userId,
+                           @Param("virtualPath") String virtualPath);
+
+    /**
+     * 获取当前目录下所有目录
+     * @param userId 用户id
+     * @param parentId 目录id
+     * @return 指定目录下所有目录
+     */
+    List<FolderInfo> getFolderListById(Long userId, Long parentId);
+
+    /**
+     * 获取当前目录下所有文件
+     * @param userId 用户id
+     * @param parentId 目录id
+     * @return 指定目录下所有文件
+     */
+    List<FileInfo> getFileListById(Long userId, Long parentId);
+
+    /**
+     * 获取指定路径下的文件info
+     * @param userId 用户id
+     * @param virtualPath 指定路径
+     * @return 文件info
+     */
+    FileInfo getFileInfoByPath(Long userId, String virtualPath);
+    
+    /**
+     * 上传文件
+     * @param fileInfo 文件
+     * @return 响应行数
+     */
+    int insertFile(FileInfo fileInfo);
+
+    /**
+     * 检查用户需要创建的目录是否存在
+     * @param userId 用户id
+     * @param virtualPath 全路径
+     * @param type 类型，0-目录，1-文件
+     * @return 查询到的记录
+     */
+    List<Object> queryVirtPathExist(Long userId, String virtualPath, Integer type);
 
     /**
      * 删除单个文件
@@ -43,88 +80,19 @@ public interface FileSystemMapper {
                          @Param("virtualPath") String virtualPath);
 
     /**
-     * 【上传文件】到MySQL
-     */
-    int addFile(FileInfo fileInfo);
-
-    /**
-     * 【重命名文件】
-     * @param newInfo 重命名后的文件对象
-     * @param oldInfo 重命名前的文件对象
-     * @return
-     */
-    int renameFile(@Param("oldInfo") FileInfo oldInfo,
-                   @Param("newInfo") FileInfo newInfo);
-
-    /*===================== 目录相关操作 ======================*/
-
-    /**
-     * 获取【目录列表】
-     * @param userId
-     * @param parentId
-     * @return
-     */
-    List<FolderInfo> queryFolderListById(@Param("userId") Long userId,
-                                         @Param("parentId") Long parentId);
-
-    /**
-     * 查询【单个目录】
+     * 删除所有子目录
      * @param userId
      * @param virtualPath
      * @return
      */
-    FolderInfo queryFolderByPath(@Param("userId") Long userId,
-                                 @Param("virtualPath") String virtualPath);
+    int deleteChildFolder(@Param("userId") Long userId,
+                          @Param("virtualPath") String virtualPath);
 
     /**
-     * 【创建目录】
-     * @param folderInfo
-     * @return
-     */
-    int addFolder(FolderInfo folderInfo);
-
-    /**
-     * 【删除所有子目录】
+     * 删除所有子文件。
      * @param userId
      * @param virtualPath
      * @return
      */
-    int deleteFolder(@Param("userId") Long userId,
-                     @Param("virtualPath") String virtualPath);
-
-    /**
-     * 【重命名当前目录】及更新所有子目录路径
-     * @return
-     */
-    int renameFolder(@Param("oldInfo") FolderInfo oldInfo,
-                     @Param("newInfo") FolderInfo newInfo);
-
-    /*================================ 其他通用查询 =================================*/
-
-    /**
-     * 检查用户需要创建的目录是否存在
-     * @param userId
-     * @param virtualPath
-     * @param type 0-目录，1-文件
-     * @return
-     */
-    List<Object> queryVirtPathExist(@Param("userId") Long userId,
-                                    @Param("virtualPath") String virtualPath,
-                                    @Param("type") Integer type);
-
-    /**
-     * 根据id查询虚拟路径
-     * @param folderId
-     * @return
-     */
-    String queryFolderPathById(@Param("userId") Long userId,
-                               @Param("folderId") Long folderId);
-
-    /**
-     * 根据虚拟路径查询id
-     * @param virtualPath
-     * @return
-     */
-    Long queryFolderIdByPath(@Param("userId") Long userId,
-                             @Param("virtualPath") String virtualPath);
+    int deleteChildFile(Long userId, String virtualPath);
 }

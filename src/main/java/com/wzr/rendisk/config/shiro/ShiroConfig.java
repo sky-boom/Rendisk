@@ -59,12 +59,12 @@ public class ShiroConfig {
         factoryBean.setSecurityManager(securityManager);
         // 自定义url规则
         Map<String, String> filterRuleMap = new HashMap<>(16);
-        // 认证接口放开
+        // 放开：认证、测试
         filterRuleMap.put("/api/v1/auth/**", "anon");
+        filterRuleMap.put("/test/**", "anon");
         // 其他请求通过自定义jwtFilter
-        filterRuleMap.put("/api/v1/folder/**", "jwt");
-        filterRuleMap.put("/api/v1/file/**", "jwt");
-        filterRuleMap.put("/api/v1/test/**", "jwt");
+        filterRuleMap.put("/api/v1/fs/**", "jwt");
+        filterRuleMap.put("/test/jwt/**", "jwt");
         factoryBean.setFilterChainDefinitionMap(filterRuleMap);
         return factoryBean;
     }
