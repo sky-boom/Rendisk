@@ -46,7 +46,7 @@ public enum ResultCode {
     INCORRECT_FILE_NAME(1009, 422, "名字不允许为空，且不能包含特殊字符"),
     
     /** 对应目录/文件路径已存在 (409, 存在冲突) */
-    PATH_ALREADY_EXISTS(1010, 409, "操作失败: 目录/文件路径已存在")
+    PATH_ALREADY_EXISTS(1010, 409, "操作失败: 目录/文件路径已存在"),
     
     ;
     /** 1. 消息类型唯一标识 */

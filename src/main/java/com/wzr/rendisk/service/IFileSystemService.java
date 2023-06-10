@@ -39,6 +39,14 @@ public interface IFileSystemService {
     FileInfo getFileInfoByPath(Long userId, String virtualPath);
 
     /**
+     * 获取指定路径下的所有文件
+     * @param userId
+     * @param virtualPath
+     * @return
+     */
+    List<FileInfo> getFileListByPath(Long userId, String virtualPath);
+
+    /**
      * 上传文件。
      * @param user 用户
      * @param fileAddDto {MultipartFile, parentName}

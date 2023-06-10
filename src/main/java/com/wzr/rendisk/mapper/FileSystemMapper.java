@@ -95,4 +95,12 @@ public interface FileSystemMapper {
      * @return
      */
     int deleteChildFile(Long userId, String virtualPath);
+
+    /**
+     * 获取指定路径下的所有文件
+     * @param userId
+     * @param virtualPath
+     * @return
+     */
+    List<FileInfo> getFileListByPath(Long userId, String virtualPath);
 }

@@ -38,8 +38,6 @@ public class FileSystemServiceImpl implements IFileSystemService {
     @Autowired
     private FileSystemMapper fileSystemMapper;
     @Autowired
-    private IAuthService authService;
-    @Autowired
     private MinioProperties minioProperties;
     @Autowired
     private MinioClientPlus minioClientPlus;
@@ -75,7 +73,9 @@ public class FileSystemServiceImpl implements IFileSystemService {
         
         // 2.数据库插入成功，然后插入至存储介质
         try {
-            minioClientPlus.createFolder(getBucketByUsername(user.getUsername()), realPath);
+            minioClientPlus.createFolder(
+                    minioClientPlus.getBucketByUsername(user.getUsername()), 
+                    realPath);
         } catch (Exception e) {
             e.printStackTrace();
             throw new GlobalException(ResultCode.ERROR);
@@ -121,6 +121,11 @@ public class FileSystemServiceImpl implements IFileSystemService {
     }
 
     @Override
+    public List<FileInfo> getFileListByPath(Long userId, String virtualPath) {
+        return fileSystemMapper.getFileListByPath(userId, virtualPath);
+    }
+
+    @Override
     public void uploadFile(User user, FileAddDto fileAddDto) {
         // 设置父目录id
         FileInfo fileInfo = new FileInfo();
@@ -146,8 +151,10 @@ public class FileSystemServiceImpl implements IFileSystemService {
         // 2.数据库插入成功，再上传至存储介质
         try {
             // 注意，上传的名字应该是完整的路径 realPath
-            minioClientPlus.uploadFile(getBucketByUsername(user.getUsername()), 
-                    fileAddDto.getFile(), realPath, ContentType.DEFAULT);
+            minioClientPlus.uploadFile(
+                    minioClientPlus.getBucketByUsername(user.getUsername()), 
+                    fileAddDto.getFile(), 
+                    realPath, ContentType.DEFAULT);
         } catch (Exception e) {
             e.printStackTrace();
             throw new GlobalException(ResultCode.ERROR);
@@ -166,7 +173,9 @@ public class FileSystemServiceImpl implements IFileSystemService {
     @Override
     public InputStream getFileStream(String username, String filePath) {
         try {
-            return minioClientPlus.getFileStream(getBucketByUsername(username), generateRealPath(filePath));
+            return minioClientPlus.getFileStream(
+                    minioClientPlus.getBucketByUsername(username), 
+                    generateRealPath(filePath));
         } catch (Exception e) {
             e.printStackTrace();
             throw new GlobalException(ResultCode.ERROR);
@@ -192,15 +201,6 @@ public class FileSystemServiceImpl implements IFileSystemService {
 //        try {
 //            minioClientPlus.removeFile();
 //        }
-    }
-
-    /**
-     * 通过用户名获取Minio的桶名
-     * @param username 用户名
-     * @return 桶名
-     */
-    private String getBucketByUsername(String username) {
-        return minioProperties.getBucketNamePrefix() + username;
     }
 
     /**

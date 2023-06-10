@@ -5,7 +5,9 @@ import com.wzr.rendisk.core.exception.GlobalException;
 import com.wzr.rendisk.core.result.GlobalResult;
 import com.wzr.rendisk.core.result.ResultCode;
 import com.wzr.rendisk.core.result.ResultData;
+import com.wzr.rendisk.entity.User;
 import com.wzr.rendisk.service.IAuthService;
+import com.wzr.rendisk.service.ISearchService;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import org.apache.shiro.SecurityUtils;
@@ -92,6 +94,24 @@ public class TestController {
         } catch (Exception e) {
             throw new GlobalException();
         }
+        return GlobalResult.success();
+    }
+    
+    @Autowired
+    private ISearchService searchService;
+
+    @RequestMapping("/file/list")
+    public ResultData<?> test8() {
+        // 测试批量插入文档
+        User user = authService.getUserByUsername("wzr");
+        return GlobalResult.success(searchService.loadAllFile(user));
+    }
+
+    @RequestMapping("/file/delall")
+    public ResultData<?> test9() {
+        // 测试删除文档
+        User user = authService.getUserByUsername("wzr");
+        searchService.removeAllFile(user);
         return GlobalResult.success();
     }
 }

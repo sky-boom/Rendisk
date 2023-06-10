@@ -91,6 +91,13 @@
     SELECT `file_name`, `virtual_path`, `file_size`, `create_time`, `update_time` FROM `t_file`
     WHERE `user_id` = #{userId} AND `virtual_path` = #{virtualPath}
   </select>
+  
+  <select id="getFileListByPath" resultMap="FileResultMap">
+    SELECT `id`, `parent_id`, `file_name`, `virtual_path`, `real_path`, 
+           `user_id`, `file_size`, `create_time`, `update_time`
+    FROM `t_file` WHERE `user_id` = #{userId} 
+                    AND `virtual_path` like concat(#{virtualPath}, '/%')
+  </select>
 
 
 </mapper>

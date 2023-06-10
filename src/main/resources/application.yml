@@ -46,11 +46,11 @@ my-config:
     # JWT认证加密私钥
     jwt-secret-key: shiro+jwt+redis
     # AccessToken过期时间(秒)
-    access-token-expire-time: 9000
+    access-token-expire-time: 90000
     # RefreshToken过期时间(秒)
-    refresh-token-expire-time: 9000
+    refresh-token-expire-time: 90000
     # shiro内置缓存过期时间（不明白，先设置成refresh的）
-    shiro-cache-expire-time: 9000
+    shiro-cache-expire-time: 900000
     
   # minio自定义配置
   minio:
@@ -63,3 +63,4 @@ my-config:
   elasticsearch:
     url: localhost
     port: 9200  
+    doc-index: rendisk_doc  # 加载到es中的文件索引

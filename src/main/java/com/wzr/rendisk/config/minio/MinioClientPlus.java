@@ -273,6 +273,7 @@ public class MinioClientPlus {
                         .prefix(prefix)
                         .recursive(recursive)
                         .build());
+        
     }
 
     /**
@@ -410,6 +411,15 @@ public class MinioClientPlus {
 
     /* *****************************  Operate Files End  ******************************/
 
+    /**
+     * 通过用户名获取Minio的桶名
+     * @param username 用户名
+     * @return 桶名
+     */
+    public String getBucketByUsername(String username) {
+        return minioProperties.getBucketNamePrefix() + username;
+    }
+    
     /**
      * 把路径开头的"/"去掉，并在末尾添加"/"，这个是minio对象名的样子。
      * @param projectPath 本项目习惯使用的路径，默认以"/"开头。

@@ -1,6 +1,7 @@
 package com.wzr.rendisk.config.es;
 
 import com.alibaba.fastjson.JSON;
+import com.wzr.rendisk.core.exception.GlobalException;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -24,6 +25,11 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
@@ -72,19 +78,34 @@ public class ElasticSearchClient {
     public static final String RESPONSE_STATUS_OK = "OK";
 
     /**
-     * 返回状态-NOT_FOUND
-     */
-    public static final String RESPONSE_STATUS_NOT_FOUND = "NOT_FOUND";
-
-    /**
      * 需要过滤的文档数据
      */
     public static final String[] IGNORE_KEY = {"@version","type"};
 
     /**
-     * 超时时间 1s
+     * 超时时间 5s
      */
-    public static final TimeValue TIME_VALUE_SECONDS = TimeValue.timeValueSeconds(1);
+    public static final TimeValue TIME_VALUE_SECONDS = TimeValue.timeValueSeconds(3);
+
+    /**
+     * (批量)超时时间 5s
+     */
+    public static final TimeValue BULK_TIME_VALUE_SECONDS = TimeValue.timeValueSeconds(6);
+
+    /**
+     * 文档批量操作 之 批量插入
+     */
+    public static final Integer BULK_INSERT_TYPE = 1;
+
+    /**
+     * 文档批量操作 之 批量更新
+     */
+    public static final Integer BULK_UPDATE_TYPE = 2;
+
+    /**
+     * 文档批量操作 之 批量删除
+     */
+    public static final Integer BULK_DELETE_TYPE = 3;
 
     /**
      * 创建索引
@@ -240,29 +261,61 @@ public class ElasticSearchClient {
     }
 
     /**
-     * 新增/修改文档信息
+     * 插入/修改文档信息
      * @param index 索引
      * @param data  数据
      */
-    public String insertDocument(String index, Object data) {
+    public boolean insertDocument(String index, Object data) {
         try {
             String id = UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
             IndexRequest request = new IndexRequest(index);
             request.timeout(TIME_VALUE_SECONDS);
-            request.id(id); // 文档id
+            request.id(id);
             request.source(JSON.toJSONString(data), XContentType.JSON);
             IndexResponse response = restHighLevelClient.index(request, RequestOptions.DEFAULT);
-            log.debug("[es] insertDocument response status:{},id:{}", response.status().getStatus(), response.getId());
+            log.debug("[es] 插入文档的响应状态: status:{},id:{}", response.status().getStatus(), response.getId());
             String status = response.status().toString();
             if (RESPONSE_STATUS_CREATED.equals(status) || RESPONSE_STATUS_OK.equals(status)) {
-                return response.getId();
+                log.debug("[es] 插入文档成功! ");
+                return true;
             }
         } catch (Exception e) {
             e.printStackTrace();
+            log.error("[es] 插入文档失败");
         }
-        return "";
+        return false;
     }
 
+    /**
+     * 批量插入文档
+     * @param index 索引
+     * @param dataList  数据
+     */
+    public void bulkInsertDocument(String index, List<?> dataList) {
+        try {
+            BulkRequest bulkRequest = new BulkRequest();
+            for (Object obj : dataList) {
+                bulkRequest.timeout(BULK_TIME_VALUE_SECONDS);
+                String uuid = UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
+                // 注意，必须设置文本提取的管道！
+                bulkRequest.add(new IndexRequest(index).setPipeline("attachment")
+                        .id(uuid).source(JSON.toJSONString(obj), XContentType.JSON));
+            }
+            // 执行批量操作
+            BulkResponse bulkResponse = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+            boolean isSuccess = !bulkResponse.hasFailures();
+            String status = bulkResponse.status().toString();
+            log.debug("[es] 批量插入的响应状态: status:{}, success:{}", status, isSuccess);
+            if (isSuccess) {
+                log.debug("[es] 批量插入操作成功! ");
+            }
+        } catch (Exception e) {
+            log.error("[es] 批量插入文档失败");
+            e.printStackTrace();
+            throw new GlobalException();
+        }
+    }
+    
     /**
      * 删除文档信息
      *
@@ -273,7 +326,7 @@ public class ElasticSearchClient {
         try {
             DeleteRequest request = new DeleteRequest(index, id);
             DeleteResponse response = restHighLevelClient.delete(request, RequestOptions.DEFAULT);
-            log.debug("[es] deleteDocument response status:{},id:{}", response.status().getStatus(), response.getId());
+            log.debug("[es] 删除文档的响应状态: status:{},id:{}", response.status().getStatus(), response.getId());
             String status = response.status().toString();
             if (RESPONSE_STATUS_OK.equals(status)) {
                 return true;
@@ -282,6 +335,28 @@ public class ElasticSearchClient {
             e.printStackTrace();
         }
         return false;
+    }
+
+    /**
+     * 批量删除文档
+     * @param index 索引
+     * @param query 查询条件（键值对）
+     */
+    public void bulkDeleteDocument(String index, Map<String, String> query) {
+        try {
+            DeleteByQueryRequest deleteRequest = new DeleteByQueryRequest(index);
+            BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+            for (Map.Entry<String, String> entry : query.entrySet()) {
+                // 这里假设.must的内容已经作用在原对象上了。（未验证）
+                boolQueryBuilder.must(QueryBuilders.termQuery(entry.getKey(), entry.getValue()));
+            }
+            deleteRequest.setQuery(boolQueryBuilder);
+            BulkByScrollResponse response = restHighLevelClient.deleteByQuery(deleteRequest, RequestOptions.DEFAULT);
+            log.debug("[es] 批量删除响应: {}", response.getStatus());
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("[es] 批量插入文档失败");
+        }
     }
 
 

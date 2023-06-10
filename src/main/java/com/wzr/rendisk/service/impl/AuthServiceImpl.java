@@ -7,6 +7,7 @@ import com.wzr.rendisk.dto.UserDto;
 import com.wzr.rendisk.entity.User;
 import com.wzr.rendisk.mapper.UserMapper;
 import com.wzr.rendisk.service.IAuthService;
+import com.wzr.rendisk.service.ISearchService;
 import com.wzr.rendisk.service.ITokenService;
 import com.wzr.rendisk.utils.JwtUtils;
 import com.wzr.rendisk.utils.UserUtils;
@@ -31,6 +32,8 @@ public class AuthServiceImpl implements IAuthService {
     
     @Autowired
     private ITokenService tokenService;
+    @Autowired
+    private ISearchService searchService;
 
     @Override
     public boolean register(String username, String password, String nickname) {
@@ -76,6 +79,8 @@ public class AuthServiceImpl implements IAuthService {
             userDto.setNickname(user.getNickname());
             userDto.setAvatarUrl(user.getAvatarUrl());
             userDto.setLastLoginTime(user.getLastLoginTime());
+            // 登录时，把文件都加载到es中
+//            searchService.loadAllFile(user);
             return userDto;
         }
         throw new GlobalException(ResultCode.USERNAME_PASSWORD_INCORRECT);
