@@ -48,6 +48,9 @@ public enum ResultCode {
     /** 对应目录/文件路径已存在 (409, 存在冲突) */
     PATH_ALREADY_EXISTS(1010, 409, "操作失败: 目录/文件路径已存在"),
     
+    /** 文件上传失败统一返回信息 */
+    FILE_UPLOAD_ERROR(1011, 666, "文件上传失败! 请检查前后端报错信息。"),
+    
     ;
     /** 1. 消息类型唯一标识 */
     private final int code;

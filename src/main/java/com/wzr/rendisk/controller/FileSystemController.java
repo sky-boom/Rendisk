@@ -6,6 +6,7 @@ import com.wzr.rendisk.core.exception.GlobalException;
 import com.wzr.rendisk.core.result.GlobalResult;
 import com.wzr.rendisk.core.result.ResultCode;
 import com.wzr.rendisk.core.result.ResultData;
+import com.wzr.rendisk.dto.BigFileAddDto;
 import com.wzr.rendisk.dto.FileAddDto;
 import com.wzr.rendisk.dto.FolderAddDto;
 import com.wzr.rendisk.entity.FileInfo;
@@ -18,10 +19,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
@@ -92,12 +93,34 @@ public class FileSystemController {
     }
 
     /**
+     * 分片上传
+     * 作者：爱玩游戏的白白狗 https://www.bilibili.com/read/cv20466281/ 出处：bilibili
+     * @return 0~n 前端上传对应分片序号
+     * -1 上传完成
+     * -2 文件md5对不上
+     */
+    @PostMapping("/file/big/upload")
+    public ResultData<String> uploadBigFile(User user, BigFileAddDto fileAddDto) {
+        // 1.文件为空，返回失败 (一般不是用户的问题)
+        if (fileAddDto.getFile() == null) {
+            throw new GlobalException();
+        }
+        // 2.名字为空，或包含特殊字符，则提示错误
+        String fileName = fileAddDto.getFile().getOriginalFilename();
+        if (StringUtils.isEmpty(fileName) || fileName.matches(FileSysConstant.NAME_EXCEPT_SYMBOL)) {
+            throw new GlobalException(ResultCode.INCORRECT_FILE_NAME);
+        }
+        String result = fileSystemService.uploadBigFile(user, fileAddDto);
+        return GlobalResult.success(result);
+    }
+    
+    /**
      * 获取文件
      * @param user 用户
      * @param filePath 文件全路径
      * @return
      */
-    @RequestMapping("/file/get")
+    @GetMapping("/file/get")
     public ResponseEntity<byte[]> getFile(User user, String filePath) throws IOException {
         // 尝试获取文件info
         FileInfo fileInfo = fileSystemService.getFileInfoByPath(user.getId(), filePath);
@@ -105,7 +128,7 @@ public class FileSystemController {
             throw new GlobalException(ResultCode.ERROR);
         }
         // 获取文件流
-        InputStream fileStream = fileSystemService.getFileStream(user.getUsername(), filePath);
+        InputStream fileStream = fileSystemService.getFileStream(user.getUsername(), fileInfo.getRealPath());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentDispositionFormData("attachment", URLEncoder.encode(fileInfo.getFileName(), "UTF-8"));

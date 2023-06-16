@@ -1,5 +1,6 @@
 package com.wzr.rendisk.config.mvc;
 
+import com.alibaba.fastjson.JSONObject;
 import com.wzr.rendisk.config.redis.RedisClient;
 import com.wzr.rendisk.core.constant.JwtConstant;
 import com.wzr.rendisk.utils.JwtUtils;
@@ -8,6 +9,7 @@ import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
@@ -15,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
@@ -29,6 +32,9 @@ import java.util.Map;
 @Slf4j
 @Aspect
 public class WebLogAspect {
+
+    /** 用于接口计时 */
+    ThreadLocal<Long> startTime = new ThreadLocal<Long>();
     
     @Autowired
     private RedisClient redisClient;
@@ -48,9 +54,12 @@ public class WebLogAspect {
 
     @Before("webLog()")
     public void doBefore(JoinPoint joinPoint) {
+        startTime.set(System.currentTimeMillis());
+        
         // 接收到请求，记录请求内容
         log.info("");
         log.info("—————————————————————— start ——————————————————————");
+        log.info("[ThreadLocal计时] 线程{}开始计时", Thread.currentThread().getName());
         log.info("\tWebLogAspect.doBefore()");
         // 记录下请求内容
         log.info("\tURL : " + HttpUtils.getHttpRequestUrlPath());
@@ -74,8 +83,16 @@ public class WebLogAspect {
         int i = 1;
         for (Map.Entry<String, String[]> entry: parameterMap.entrySet()) {
             log.info("\t参数{} : {} = {}", i ++,  entry.getKey(), Arrays.toString(entry.getValue()) );
-        }
-        log.info("——————————————————————  end ———————————————————————");
+        }  
+//        log.info("——————————————————————  end ———————————————————————");
     }
-    
+
+    @AfterReturning(returning = "ret", pointcut = "webLog()")
+    public void doAfterReturning(Object ret) {
+//        log.info("返回参数: {}", JSONObject.toJSONString(ret));
+        HttpServletRequest request = HttpUtils.getCurrentHttpRequest();
+        log.info("接口 {} 访问完毕" , request.getRequestURL());
+        log.info("[ThreadLocal计时] 线程{}结束计时，共耗时（毫秒）: {}" , Thread.currentThread().getName() ,(System.currentTimeMillis() - startTime.get()));
+        log.info("——————————————————————— end ———————————————————————");
+    }
 }

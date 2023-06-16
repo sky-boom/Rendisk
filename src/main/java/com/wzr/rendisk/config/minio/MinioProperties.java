@@ -35,5 +35,9 @@ public class MinioProperties {
      * 需创建的桶名字
      */
     private String bucketNamePrefix;
-    
+
+    /**
+     * 临时文件存储桶名
+     */
+    private String tempBucketName;
 }

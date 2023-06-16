@@ -88,7 +88,7 @@
   </select>
   
   <select id="getFileInfoByPath" resultMap="FileResultMap">
-    SELECT `file_name`, `virtual_path`, `file_size`, `create_time`, `update_time` FROM `t_file`
+    SELECT `file_name`, `virtual_path`, `real_path`, `file_size`, `create_time`, `update_time` FROM `t_file`
     WHERE `user_id` = #{userId} AND `virtual_path` = #{virtualPath}
   </select>
   

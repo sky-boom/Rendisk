@@ -5,17 +5,27 @@ import com.wzr.rendisk.core.exception.GlobalException;
 import com.wzr.rendisk.core.result.GlobalResult;
 import com.wzr.rendisk.core.result.ResultCode;
 import com.wzr.rendisk.core.result.ResultData;
+import com.wzr.rendisk.entity.FileInfo;
 import com.wzr.rendisk.entity.User;
 import com.wzr.rendisk.service.IAuthService;
+import com.wzr.rendisk.service.IFileSystemService;
 import com.wzr.rendisk.service.ISearchService;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
+import org.apache.commons.io.IOUtils;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.List;
 
@@ -113,5 +123,29 @@ public class TestController {
         User user = authService.getUserByUsername("wzr");
         searchService.removeAllFile(user);
         return GlobalResult.success();
+    }
+    
+    @Autowired
+    private IFileSystemService fileSystemService;
+
+    /**
+     * 获取文件
+     * @param user 用户
+     * @param filePath 文件全路径
+     * @return
+     */
+    @GetMapping("/file/get")
+    public ResponseEntity<byte[]> getFile(User user, String filePath) throws IOException {
+        // 尝试获取文件info
+        FileInfo fileInfo = fileSystemService.getFileInfoByPath(user.getId(), filePath);
+        if ( fileInfo == null ) {
+            throw new GlobalException(ResultCode.ERROR);
+        }
+        // 获取文件流
+        InputStream fileStream = fileSystemService.getFileStream(user.getUsername(), fileInfo.getRealPath());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment", URLEncoder.encode(fileInfo.getFileName(), "UTF-8"));
+        return new ResponseEntity<byte[]>(IOUtils.toByteArray(fileStream), headers, HttpStatus.OK);
     }
 }

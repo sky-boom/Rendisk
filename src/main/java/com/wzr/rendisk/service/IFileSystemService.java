@@ -1,10 +1,12 @@
 package com.wzr.rendisk.service;
 
+import com.wzr.rendisk.dto.BigFileAddDto;
 import com.wzr.rendisk.dto.FileAddDto;
 import com.wzr.rendisk.dto.FileListDto;
 import com.wzr.rendisk.dto.FolderAddDto;
 import com.wzr.rendisk.entity.FileInfo;
 import com.wzr.rendisk.entity.User;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.List;
@@ -53,6 +55,14 @@ public interface IFileSystemService {
      */
     void uploadFile(User user, FileAddDto fileAddDto);
 
+    /**
+     * 大文件分片上传
+     * @param user 用户
+     * @param fileAddDto 含文件file、分片索引sliceIndex、分片总数totalPieces、整体文件md5
+     */
+    String uploadBigFile(User user, BigFileAddDto fileAddDto);
+    
+    
     /**
      * 检查用户需要创建的目录/文件是否存在
      * @param userId 用户id

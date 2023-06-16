@@ -36,8 +36,8 @@ logging:
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.wzr.rendisk.entity
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+#  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 # 自定义参数
 my-config:
@@ -58,6 +58,7 @@ my-config:
     access-key: minioadmin
     secret-key: minioadmin
     bucket-name-prefix: rendisk- # 桶前缀名
+    temp-bucket-name: temp-dir
 
   # elasticsearch自定义配置
   elasticsearch:
