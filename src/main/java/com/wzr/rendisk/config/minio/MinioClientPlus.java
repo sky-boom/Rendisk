@@ -1,6 +1,8 @@
 package com.wzr.rendisk.config.minio;
 
 import com.google.common.collect.Sets;
+import com.wzr.rendisk.core.exception.GlobalException;
+import com.wzr.rendisk.core.result.ResultCode;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.http.Method;
@@ -24,6 +26,7 @@ import java.net.URLDecoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -270,12 +273,17 @@ public class MinioClientPlus {
      * @param bucketName 存储桶
      * @param fileName 文件名称
      */
-    public String getFileStatusInfo(String bucketName, String fileName) throws Exception {
-        return minioClient.statObject(
-                StatObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .build()).toString();
+    public StatObjectResponse getFileStatusInfo(String bucketName, String fileName) {
+        try {
+            return minioClient.statObject(
+                    StatObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileName)
+                            .build());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new GlobalException(ResultCode.ERROR);
+        }
     }
 
     /**
@@ -337,14 +345,19 @@ public class MinioClientPlus {
      * @param length 要读取的长度
      * @return 二进制流
      */
-    public InputStream getFileStream(String bucketName, String fileName, long offset, long length) throws Exception {
-        return minioClient.getObject(
-                GetObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .offset(offset)
-                        .length(length)
-                        .build());
+    public InputStream getFileStream(String bucketName, String fileName, long offset, long length) {
+        try {
+            return minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileName)
+                            .offset(offset)
+                            .length(length)
+                            .build());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new GlobalException(ResultCode.ERROR);
+        }
     }
 
     /**
@@ -366,7 +379,7 @@ public class MinioClientPlus {
     }
 
     /**
-     * 删除文件夹
+     * 删除文件夹(未完成)
      * @param bucketName 存储桶
      * @param fileName 路径
      */
@@ -447,7 +460,12 @@ public class MinioClientPlus {
      * @throws Exception
      */
     public String getPresignedObjectUrl(String bucketName, String fileName, Integer expires) throws Exception {
-        GetPresignedObjectUrlArgs args = GetPresignedObjectUrlArgs.builder().expiry(expires).bucket(bucketName).object(fileName).build();
+        GetPresignedObjectUrlArgs args = GetPresignedObjectUrlArgs.builder()
+                .method(Method.GET)
+                .expiry(expires, TimeUnit.SECONDS)
+                .bucket(bucketName)
+                .object(fileName)
+                .build();
         return minioClient.getPresignedObjectUrl(args);
     }
 

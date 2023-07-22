@@ -148,7 +148,7 @@ public class FileSystemController {
         if (StringUtils.isEmpty(virtualPath)) {
             throw new GlobalException(ResultCode.INCORRECT_FILE_NAME);
         }
-        // 开始删除数据库及HDFS的数据
+        // 开始删除数据库及Minio的数据
         fileSystemService.deleteByPath(user, virtualPath, type);
         // 无异常时，即返回成功。
         return GlobalResult.success();

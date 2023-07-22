@@ -18,19 +18,24 @@ import com.wzr.rendisk.utils.DateUtils;
 import io.minio.ComposeSource;
 import io.minio.ObjectWriteResponse;
 import io.minio.Result;
+import io.minio.StatObjectResponse;
 import io.minio.messages.DeleteError;
 import io.minio.messages.DeleteObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,6 +54,10 @@ public class FileSystemServiceImpl implements IFileSystemService {
     private MinioProperties minioProperties;
     @Autowired
     private MinioClientPlus minioClientPlus;
+    @Autowired
+    private ThreadPoolExecutor commonThreadPool;
+    @Autowired
+    private ThreadPoolTaskExecutor taskExecutor;
     
     /**
      * 分隔符
@@ -211,10 +220,164 @@ public class FileSystemServiceImpl implements IFileSystemService {
 
     @Override
     public InputStream getFileStream(String username, String filePath) {
+        InputStream inputStream;
+        inputStream = singleThreadGet(username, filePath);
+//        inputStream = multiThreadGet(username, filePath);
+        return inputStream;
+    }
+    
+    private InputStream singleThreadGet(String username, String filePath) {
         try {
             return minioClientPlus.getFileStream(
-                    minioClientPlus.getBucketByUsername(username), 
+                    minioClientPlus.getBucketByUsername(username),
                     filePath);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new GlobalException(ResultCode.ERROR);
+        }
+    }
+    
+    private InputStream multiThreadGet(String username, String filePath){
+        final String bucketName = minioClientPlus.getBucketByUsername(username);
+        StatObjectResponse info = minioClientPlus.getFileStatusInfo(bucketName, filePath);
+        /*
+          如果是105字节的文件，10个线程执行，平均分配下，有：
+                ceil (105 / 10d) = 11.0, 但10个线程总共会操作110字节
+                因此，可以让前9个线程负责11字节(共99字节)，最后1个线程按需分配字节(需执行6字节)
+         */
+        int corePoolSize = commonThreadPool.getCorePoolSize();
+        long size = info.size();
+        long sliceLength = (long) Math.ceil( size / (double) corePoolSize );
+        log.info("得到文件 {} 的长度: {}", filePath, size);
+        // 根据核心线程数，来分配文件下载任务
+        long offset = 0;
+        List<Future<InputStream>> futureList = new ArrayList<>();
+        for (int i = 0; i < corePoolSize; i++) {
+            long currLength = sliceLength;
+            // 如果超过文件容量，说明文件到达最后一段，处理这一段后，下一步必定会退出循环。
+            if (offset + sliceLength >= size) {
+                currLength = size - offset;
+            }
+            // 使用隐式final变量，让lambda知道这两个变量不会再赋其他值
+            long fixedOffset = offset;
+            long fixedLength = currLength;
+            Future<InputStream> future = CompletableFuture.supplyAsync(() -> {
+                log.info("[下载文件] {}正在下载字节范围在 [{}, {}] 之间的文件...",
+                        Thread.currentThread().getName(), fixedOffset, fixedOffset + fixedLength - 1);
+                return minioClientPlus.getFileStream(bucketName, filePath, fixedOffset, fixedLength);
+            }, commonThreadPool);
+            futureList.add(future);
+            offset += sliceLength;
+        }
+        // 处理线程返回结果，如果每个线程执行耗时不同，则会等到所有线程执行完毕再处理
+        long startTime = System.currentTimeMillis();
+        List<InputStream> inputStreams = futureList.stream().map(futureItem -> {
+            try {
+                return futureItem.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new GlobalException(ResultCode.ERROR);
+            }
+        }).collect(Collectors.toList());
+        log.info("把future转化为inputStream，共耗时: {} ms", System.currentTimeMillis() - startTime);
+        startTime = System.currentTimeMillis();
+        InputStream sequenceInputStream = new SequenceInputStream(Collections.enumeration(inputStreams));
+        log.info("合并inputStream列表，共耗时: {} ms", System.currentTimeMillis() - startTime);
+        return sequenceInputStream;
+    }
+
+    private InputStream multiThreadGet2(String username, String filePath){
+        final String bucketName = minioClientPlus.getBucketByUsername(username);
+        try {
+            StatObjectResponse info = minioClientPlus.getFileStatusInfo(bucketName, filePath);
+            /*
+              如果是105字节的文件，10个线程执行，平均分配下，有：
+                    ceil (105 / 10d) = 11.0, 但10个线程总共会操作110字节
+                    因此，可以让前9个线程负责11字节(共99字节)，最后1个线程按需分配字节(需执行6字节)
+             */
+            int corePoolSize = commonThreadPool.getCorePoolSize();
+            long size = info.size();
+            long sliceLength = (long) Math.ceil( size / (double) corePoolSize );
+            log.info("得到文件 {} 的长度: {}", filePath, size);
+            // 根据核心线程数，来分配文件下载任务
+            long offset = 0;
+            List<Future<InputStream>> futureList = new ArrayList<>();
+            for (int i = 0; i < corePoolSize; i++) {
+                long currLength = sliceLength;
+                // 如果超过文件容量，说明文件到达最后一段，处理这一段后，下一步必定会退出循环。
+                if (offset + sliceLength >= size) {
+                    currLength = size - offset;
+                }
+                // 使用隐式final变量，让lambda知道这两个变量不会再赋其他值
+                long fixedOffset = offset;
+                long fixedLength = currLength;
+                Future<InputStream> future = commonThreadPool.submit(() -> {
+                    log.info("[下载文件] {}正在下载字节范围在 [{}, {}] 之间的文件...", 
+                            Thread.currentThread().getName(), fixedOffset, fixedOffset + fixedLength - 1);
+                    return minioClientPlus.getFileStream(bucketName, filePath, fixedOffset, fixedLength);
+                });
+                futureList.add(future);
+                offset += sliceLength;
+            }
+            // 处理线程返回结果，如果每个线程执行耗时不同，则会等到所有线程执行完毕再处理
+            List<InputStream> inputStreams = futureList.stream().map(futureItem -> {
+                try {
+                    return futureItem.get();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw new GlobalException(ResultCode.ERROR);
+                }
+            }).collect(Collectors.toList());
+            return new SequenceInputStream(Collections.enumeration(inputStreams));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new GlobalException(ResultCode.ERROR);
+        }
+    }
+
+    private InputStream multiThreadGet3(String username, String filePath){
+        final String bucketName = minioClientPlus.getBucketByUsername(username);
+        try {
+            StatObjectResponse info = minioClientPlus.getFileStatusInfo(bucketName, filePath);
+            /*
+              如果是105字节的文件，10个线程执行，平均分配下，有：
+                    ceil (105 / 10d) = 11.0, 但10个线程总共会操作110字节
+                    因此，可以让前9个线程负责11字节(共99字节)，最后1个线程按需分配字节(需执行6字节)
+             */
+            int corePoolSize = commonThreadPool.getCorePoolSize();
+            long size = info.size();
+            long sliceLength = (long) Math.ceil( size / (double) corePoolSize );
+            log.info("得到文件 {} 的长度: {}", filePath, size);
+            // 根据核心线程数，来分配文件下载任务
+            long offset = 0;
+            List<Future<InputStream>> futureList = new ArrayList<>();
+            for (int i = 0; i < corePoolSize; i++) {
+                long currLength = sliceLength;
+                // 如果超过文件容量，说明文件到达最后一段，处理这一段后，下一步必定会退出循环。
+                if (offset + sliceLength >= size) {
+                    currLength = size - offset;
+                }
+                // 使用隐式final变量，让lambda知道这两个变量不会再赋其他值
+                long fixedOffset = offset;
+                long fixedLength = currLength;
+                Future<InputStream> future = commonThreadPool.submit(() -> {
+                    log.info("[下载文件] {}正在下载字节范围在 [{}, {}] 之间的文件...",
+                            Thread.currentThread().getName(), fixedOffset, fixedOffset + fixedLength - 1);
+                    return minioClientPlus.getFileStream(bucketName, filePath, fixedOffset, fixedLength);
+                });
+                futureList.add(future);
+                offset += sliceLength;
+            }
+            // 处理线程返回结果，如果每个线程执行耗时不同，则会等到所有线程执行完毕再处理
+            List<InputStream> inputStreams = futureList.stream().map(futureItem -> {
+                try {
+                    return futureItem.get();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw new GlobalException(ResultCode.ERROR);
+                }
+            }).collect(Collectors.toList());
+            return new SequenceInputStream(Collections.enumeration(inputStreams));
         } catch (Exception e) {
             e.printStackTrace();
             throw new GlobalException(ResultCode.ERROR);
@@ -223,7 +386,8 @@ public class FileSystemServiceImpl implements IFileSystemService {
 
     @Override
     public void deleteByPath(User user, String virtualPath, Integer type) {
-        String realPath = null;
+        // 先查询数据库，再删掉
+        FileInfo fileInfo = fileSystemMapper.getFileInfoByPath(user.getId(), virtualPath);
         // 如果是文件，直接删除即可
         if (FileSysConstant.FILE_TYPE.equals(type)) {
             // 删除当前文件
@@ -237,9 +401,13 @@ public class FileSystemServiceImpl implements IFileSystemService {
             fileSystemMapper.deleteChildFile(user.getId(), virtualPath);
         }
         // 删除完毕，开始删除实际存储的内容（未完成）
-//        try {
-//            minioClientPlus.removeFile();
-//        }
+        try {
+            minioClientPlus.removeFile(minioClientPlus.getBucketByUsername(
+                    user.getUsername()), fileInfo.getRealPath());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new GlobalException();
+        }
     }
 
     /**

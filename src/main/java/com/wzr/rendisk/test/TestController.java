@@ -1,4 +1,4 @@
-package com.wzr.rendisk.controller;
+package com.wzr.rendisk.test;
 
 import com.wzr.rendisk.config.minio.MinioClientPlus;
 import com.wzr.rendisk.core.exception.GlobalException;
@@ -21,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -95,6 +96,7 @@ public class TestController {
         }
         return GlobalResult.success();
     }
+    
 
     @RequestMapping("/folder/remove")
     public ResultData<?> test7(String name) {
@@ -108,16 +110,32 @@ public class TestController {
     }
     
     @Autowired
+    private IFileSystemService fileSystemService;
+
+    @RequestMapping("/file/url")
+    public ResultData<?> getPresignedObjectUrl(String name) {
+        FileInfo fileInfoByPath = fileSystemService.getFileInfoByPath(1000003L, name);
+        String realPath = fileInfoByPath.getRealPath();
+        // 获得文件外链
+        try {
+            return GlobalResult.success( minioClientPlus.getPresignedObjectUrl(bucketName, realPath, 60) );
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new GlobalException();
+        }
+    }
+    
+    @Autowired
     private ISearchService searchService;
 
-    @RequestMapping("/file/list")
+    @RequestMapping("/es/file/list")
     public ResultData<?> test8() {
         // 测试批量插入文档
         User user = authService.getUserByUsername("wzr");
         return GlobalResult.success(searchService.loadAllFile(user));
     }
 
-    @RequestMapping("/file/delall")
+    @RequestMapping("/es/file/delall")
     public ResultData<?> test9() {
         // 测试删除文档
         User user = authService.getUserByUsername("wzr");
@@ -125,27 +143,41 @@ public class TestController {
         return GlobalResult.success();
     }
     
-    @Autowired
-    private IFileSystemService fileSystemService;
+    @RequestMapping("/es/search")
+    @ResponseBody
+    public ResponseEntity<?> testSearch(String keyword) {
+        return ResponseEntity.ok( searchService.testSearch(keyword) );
+    }
 
-    /**
-     * 获取文件
-     * @param user 用户
-     * @param filePath 文件全路径
-     * @return
-     */
-    @GetMapping("/file/get")
-    public ResponseEntity<byte[]> getFile(User user, String filePath) throws IOException {
-        // 尝试获取文件info
-        FileInfo fileInfo = fileSystemService.getFileInfoByPath(user.getId(), filePath);
-        if ( fileInfo == null ) {
-            throw new GlobalException(ResultCode.ERROR);
+    @RequestMapping("/es/addone")
+    @ResponseBody
+    public ResponseEntity<?> testAddone() {
+        return ResponseEntity.ok( searchService.testLoadDocument() );
+    }
+
+    
+    @Autowired
+    private TestMapper testMapper;
+    
+    @RequestMapping("/thumbsUp")
+    @ResponseBody
+    public ResponseEntity<?> testThumbsUp() {
+        // 测试多用户点赞
+        return ResponseEntity.ok( syncThumbsUp() );
+    }
+    
+    private Integer syncThumbsUp() {
+        synchronized (TestController.class) {
+            return testMapper.testThumbsUp();
         }
-        // 获取文件流
-        InputStream fileStream = fileSystemService.getFileStream(user.getUsername(), fileInfo.getRealPath());
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", URLEncoder.encode(fileInfo.getFileName(), "UTF-8"));
-        return new ResponseEntity<byte[]>(IOUtils.toByteArray(fileStream), headers, HttpStatus.OK);
+    }
+
+    private Integer thumbsUp() {
+        try {
+            Thread.sleep(100);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return testMapper.testThumbsUp();
     }
 }

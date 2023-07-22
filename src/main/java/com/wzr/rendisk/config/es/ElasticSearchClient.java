@@ -1,9 +1,13 @@
 package com.wzr.rendisk.config.es;
 
 import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wzr.rendisk.core.exception.GlobalException;
+import com.wzr.rendisk.core.result.ResultCode;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.bulk.BackoffPolicy;
+import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -23,6 +27,8 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.text.Text;
+import org.elasticsearch.common.unit.ByteSizeUnit;
+import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -56,6 +62,9 @@ public class ElasticSearchClient {
     @Autowired
     @Qualifier("myESClient")
     private RestHighLevelClient restHighLevelClient;
+    
+    @Autowired
+    private BulkProcessor bulkProcessor;
 
     /**
      * 默认类型
@@ -261,6 +270,30 @@ public class ElasticSearchClient {
     }
 
     /**
+     * 获得关键词搜索结果
+     * @param index
+     * @param sourceBuilder
+     * @return
+     */
+    public SearchHit[] selectDocumentList(String index, SearchSourceBuilder sourceBuilder) {
+        try {
+            SearchRequest request = new SearchRequest(index);
+            if (sourceBuilder != null) {
+                // 返回实际命中数
+                sourceBuilder.trackTotalHits(true);
+                request.source(sourceBuilder);
+            }
+            SearchResponse response = restHighLevelClient.search(request, RequestOptions.DEFAULT);
+            if (response.getHits() != null) {
+                return response.getHits().getHits();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        throw new GlobalException();
+    }
+
+    /**
      * 插入/修改文档信息
      * @param index 索引
      * @param data  数据
@@ -271,6 +304,8 @@ public class ElasticSearchClient {
             IndexRequest request = new IndexRequest(index);
             request.timeout(TIME_VALUE_SECONDS);
             request.id(id);
+            // 重要！！必须设置管道
+            request.setPipeline("attachment");
             request.source(JSON.toJSONString(data), XContentType.JSON);
             IndexResponse response = restHighLevelClient.index(request, RequestOptions.DEFAULT);
             log.debug("[es] 插入文档的响应状态: status:{},id:{}", response.status().getStatus(), response.getId());
@@ -287,7 +322,7 @@ public class ElasticSearchClient {
     }
 
     /**
-     * 批量插入文档
+     * 批量插入文档【单文件容量巨大时，存在内存泄露问题】
      * @param index 索引
      * @param dataList  数据
      */
@@ -296,10 +331,10 @@ public class ElasticSearchClient {
             BulkRequest bulkRequest = new BulkRequest();
             for (Object obj : dataList) {
                 bulkRequest.timeout(BULK_TIME_VALUE_SECONDS);
-                String uuid = UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
-                // 注意，必须设置文本提取的管道！
+                String source = new ObjectMapper().writeValueAsString(obj);
+                // 注意，必须设置文本提取的管道！另外，不要自己创建文档id，否则每次存储新id，ES都要检查整个分片是否存在该id。
                 bulkRequest.add(new IndexRequest(index).setPipeline("attachment")
-                        .id(uuid).source(JSON.toJSONString(obj), XContentType.JSON));
+                        .source(source, XContentType.JSON));
             }
             // 执行批量操作
             BulkResponse bulkResponse = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
@@ -315,6 +350,28 @@ public class ElasticSearchClient {
             throw new GlobalException();
         }
     }
+
+//    /**
+//     * 批量插入文档【稍微优化一下，仍然会OOM】
+//     * @param index 索引
+//     * @param dataList  数据
+//     */
+//    public void bulkInsertDocument(String index, List<?> dataList) {
+//        try {
+//            for (Object obj : dataList) {
+//                String source = new ObjectMapper().writeValueAsString(obj);
+//                // 注意，必须设置文本提取的管道！另外，不要自己创建文档id，否则每次存储新id，ES都要检查整个分片是否存在该id。
+//                IndexRequest indexRequest = new IndexRequest(index).setPipeline("attachment")
+//                        .source(source, XContentType.JSON);
+//                // 执行批量操作
+//                bulkProcessor.add(indexRequest);
+//            }
+//        } catch (Exception e) {
+//            log.error("[es] 批量插入文档失败");
+//            e.printStackTrace();
+//            throw new GlobalException();
+//        }
+//    }
     
     /**
      * 删除文档信息
@@ -356,6 +413,7 @@ public class ElasticSearchClient {
         } catch (Exception e) {
             e.printStackTrace();
             log.error("[es] 批量插入文档失败");
+            throw new GlobalException(ResultCode.ERROR);
         }
     }
 
@@ -480,38 +538,6 @@ public class ElasticSearchClient {
         });
         return sourceAsMap;
     }
-
-//    /**
-//     * 高亮结果集 特殊处理
-//     *
-//     * @param searchResponse
-//     * @param highlightField
-//     */
-//    private List<Map<String, Object>> setSearchResponse(SearchResponse searchResponse, String highlightField) {
-//        List<Map<String, Object>> sourceList = new ArrayList<>();
-//        StringBuffer stringBuffer = new StringBuffer();
-//
-//        for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-//            searchHit.getSourceAsMap().put("id", searchHit.getId());
-//
-//            if (StringUtils.isNotEmpty(highlightField)) {
-//
-//                System.out.println("遍历 高亮结果集，覆盖 正常结果集" + searchHit.getSourceAsMap());
-//                Text[] text = searchHit.getHighlightFields().get(highlightField).getFragments();
-//
-//                if (text != null) {
-//                    for (Text str : text) {
-//                        stringBuffer.append(str.string());
-//                    }
-//                    //遍历 高亮结果集，覆盖 正常结果集
-//                    searchHit.getSourceAsMap().put(highlightField, stringBuffer.toString());
-//                }
-//            }
-//            sourceList.add(searchHit.getSourceAsMap());
-//        }
-//        return sourceList;
-//    }
-
 
     /**
      * 将文档数据转化为指定对象

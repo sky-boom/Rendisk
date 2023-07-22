@@ -1,5 +1,6 @@
 package com.wzr.rendisk.service;
 
+import com.wzr.rendisk.dto.SearchDto;
 import com.wzr.rendisk.entity.DocumentObj;
 import com.wzr.rendisk.entity.User;
 
@@ -23,6 +24,24 @@ public interface ISearchService {
      * @param user 用户
      */
     void removeAllFile(User user);
-    
-    
+
+    /**
+     * 根据关键词，搜索文档
+     * @param user
+     * @param searchDto
+     * @return
+     */
+    List<DocumentObj> search(User user, SearchDto searchDto);
+
+    /**
+     * （测试）根据关键词，搜索文档
+     * @param keyword
+     * @return
+     */
+    List<DocumentObj> testSearch(String keyword);
+
+    /**
+     * （测试）把本地文档加载到elasticsearch中
+     */
+    boolean testLoadDocument();
 }

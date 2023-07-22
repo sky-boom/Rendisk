@@ -2,6 +2,9 @@ package com.wzr.rendisk.utils;
 
 import org.apache.commons.io.FilenameUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Base64;
 
 /**
@@ -27,5 +30,18 @@ public class DocumentUtils {
      */
     public static String getFileExtension(String fileName) {
         return FilenameUtils.getExtension(fileName);
+    }
+
+    /**
+     * inputStream转outputStream
+     * @return
+     */
+    public static OutputStream input2Output(final InputStream in) throws Exception {
+        final ByteArrayOutputStream swapStream = new ByteArrayOutputStream();
+        int ch;
+        while ((ch = in.read()) != -1) {
+            swapStream.write(ch);
+        }
+        return swapStream;
     }
 }
