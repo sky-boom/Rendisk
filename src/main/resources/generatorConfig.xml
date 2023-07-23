@@ -21,26 +21,29 @@
                         userId="root"
                         password="300074">
         </jdbcConnection>
-        <!--生成Model类存放位置 entity-->
+        
+        <!--【entity】生成Model类存放位置 -->
         <javaModelGenerator targetPackage="com.wzr.rendisk.entity" targetProject="./src/main/java">
             <!--是否合并-->
             <property name="enableSubPackages" value="true"/>
             <!--去除空格-->
             <property name="trimStrings" value="true"/>
         </javaModelGenerator>
-        <!--生成映射文件存放位置-->
-        <sqlMapGenerator targetPackage="mapper" targetProject="./src/main/resources">
-            <!--是否合并-->
-            <property name="enableSubPackages" value="true"/>
-        </sqlMapGenerator>
-        <!--生成Dao类存放位置-->
-        <javaClientGenerator type="XMLMAPPER" targetPackage="com.wzr.rendisk.mapper" targetProject="./src/main/java">
-            <!--是否合并-->
-            <property name="enableSubPackages" value="true"/>
-        </javaClientGenerator>
-        <!--生成对应表及类名-->
         
-        <table tableName="t_file" domainObjectName="File"
+<!--        &lt;!&ndash;【mapper】生成映射文件存放位置&ndash;&gt;-->
+<!--        <sqlMapGenerator targetPackage="mapper" targetProject="./src/main/resources">-->
+<!--            &lt;!&ndash;是否合并&ndash;&gt;-->
+<!--            <property name="enableSubPackages" value="true"/>-->
+<!--        </sqlMapGenerator>-->
+<!--        -->
+<!--        &lt;!&ndash;【mapper.xml】生成Dao类存放位置&ndash;&gt;-->
+<!--        <javaClientGenerator type="XMLMAPPER" targetPackage="com.wzr.rendisk.mapper" targetProject="./src/main/java">-->
+<!--            &lt;!&ndash;是否合并&ndash;&gt;-->
+<!--            <property name="enableSubPackages" value="true"/>-->
+<!--        </javaClientGenerator>-->
+        
+        <!--生成对应表及类名-->
+        <table tableName="t_team_member" domainObjectName="TeamMember"
                enableCountByExample="false"
                enableUpdateByExample="false"
                enableDeleteByExample="false"

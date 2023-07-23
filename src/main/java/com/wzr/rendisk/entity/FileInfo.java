@@ -5,6 +5,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.Date;
 
+@Deprecated
 @Data
 public class FileInfo implements Serializable {
     private Long id;
