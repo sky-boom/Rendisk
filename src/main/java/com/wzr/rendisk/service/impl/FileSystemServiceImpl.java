@@ -1,8 +1,8 @@
 package com.wzr.rendisk.service.impl;
 
-import com.wzr.rendisk.config.minio.ContentType;
-import com.wzr.rendisk.config.minio.MinioClientPlus;
-import com.wzr.rendisk.config.minio.MinioProperties;
+import com.wzr.minio.client.FragResult;
+import com.wzr.minio.client.MinioUtils;
+import com.wzr.minio.config.ContentType;
 import com.wzr.rendisk.core.constant.FileSysConstant;
 import com.wzr.rendisk.core.exception.GlobalException;
 import com.wzr.rendisk.core.result.ResultCode;
@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.io.SequenceInputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,13 +50,13 @@ public class FileSystemServiceImpl implements IFileSystemService {
     @Autowired
     private FileSystemMapper fileSystemMapper;
     @Autowired
-    private MinioProperties minioProperties;
-    @Autowired
-    private MinioClientPlus minioClientPlus;
+    private MinioUtils minioUtils;
     @Autowired
     private ThreadPoolExecutor commonThreadPool;
     @Autowired
     private ThreadPoolTaskExecutor taskExecutor;
+    @Value("${minio-util.bucket-name-prefix}")
+    private String bucketNamePrefix;
     
     /**
      * 分隔符
@@ -90,8 +89,8 @@ public class FileSystemServiceImpl implements IFileSystemService {
         
         // 2.数据库插入成功，然后插入至存储介质
         try {
-            minioClientPlus.createFolder(
-                    minioClientPlus.getBucketByUsername(user.getUsername()), 
+            minioUtils.createFolder(
+                    getBucketByUsername(user.getUsername()), 
                     realPath);
         } catch (Exception e) {
             e.printStackTrace();
@@ -150,8 +149,8 @@ public class FileSystemServiceImpl implements IFileSystemService {
         // 数据库插入成功，再上传至存储介质
         try {
             // 注意，上传的名字应该是完整的路径 realPath
-            minioClientPlus.uploadFile(
-                    minioClientPlus.getBucketByUsername(user.getUsername()), 
+            minioUtils.uploadFile(
+                    getBucketByUsername(user.getUsername()), 
                     fileAddDto.getFile(),
                     fileInfo.getRealPath(), ContentType.DEFAULT);
         } catch (Exception e) {
@@ -164,44 +163,27 @@ public class FileSystemServiceImpl implements IFileSystemService {
     public String uploadBigFile(User user, BigFileAddDto fileAddDto) {
         try {
             MultipartFile file = fileAddDto.getFile();
-            Integer sliceIndex = fileAddDto.getSliceIndex();
+            Integer currIndex = fileAddDto.getCurrIndex();
             Integer totalPieces = fileAddDto.getTotalPieces();
             String md5 = fileAddDto.getMd5();
-            log.info("[Bigfile] 上传文件md5及分片索引: {}", minioClientPlus.getFileTempPath(md5, sliceIndex));
-            // 上传
-            int nextIndex = minioClientPlus.uploadFileFragment(file, sliceIndex, totalPieces, md5);
-            if (nextIndex == -1) {
-                // 文件信息先插入数据库
+            log.info("[Bigfile] 上传文件md5: {} ,分片索引: {}", md5, currIndex);
+            FragResult fragResult = minioUtils.uploadFileFragment(file, currIndex, totalPieces, md5);
+            // 分片全部上传完毕
+            if ( fragResult.isAllCompleted() ) {
                 FileInfo fileInfo = getFileInfo(fileAddDto, user.getId());
                 DBUtils.checkOperation( fileSystemMapper.insertFile(fileInfo) );
-                // 合并对应路径下所有文件，并指定目标路径。
-                List<String> filePaths = Stream.iterate(0, i -> ++i)
-                        .limit(totalPieces)
-                        .map(i -> minioClientPlus.getFileTempPath(md5, i) )
-                        .collect(Collectors.toList());
                 String realPath = generateRealPath(generateVirtPath(fileAddDto.getParentPath(), file.getOriginalFilename()));
-                ObjectWriteResponse response = minioClientPlus.composeFileFragment(
-                        minioClientPlus.getBucketByUsername(user.getUsername()),
-                        realPath, filePaths);
-                log.info("[Bigfile] 文件合并成功! 准备删除文件分片... ");
-                // 然后删除所有的分片文件
-                Iterable<Result<DeleteError>> results = minioClientPlus.removeFiles(minioProperties.getTempBucketName(), filePaths);
-                for (Result<DeleteError> result : results) {
-                    DeleteError error = result.get();
-                    log.error("[Bigfile] 分片'{}'删除失败! 错误信息: {}", error.objectName(), error.message());
+                // 发起文件合并请求, 无异常则成功
+                minioUtils.composeFileFragment(getBucketByUsername(user.getUsername()), realPath, totalPieces, md5);
+                return "-1";
+            } else {
+                Iterator<Integer> iterator = fragResult.getRemainIndex().iterator();
+                if (iterator.hasNext()) {
+                    String nextIndex = iterator.next().toString();
+                    log.info("[BigFile] 下一个需上传的文件索引是:{}", nextIndex);
+                    return nextIndex;
                 }
-                // 验证md5
-                try (InputStream stream = minioClientPlus.getFileStream(response.bucket(), response.object()) ) {
-                    String md5Hex = DigestUtils.md5Hex(stream);
-                    if (!md5Hex.equals(md5)) {
-                        log.error("[Bigfile] 前后端文件 MD5 检验失败！");
-                        throw new GlobalException(ResultCode.FILE_UPLOAD_ERROR);
-                    }
-                }
-                log.info("[BigFile] 文件上传成功! ");
             }
-            log.info("[BigFile] 下一个需上传的文件索引是:{}", nextIndex);
-            return nextIndex + "";
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -222,14 +204,14 @@ public class FileSystemServiceImpl implements IFileSystemService {
     public InputStream getFileStream(String username, String filePath) {
         InputStream inputStream;
         inputStream = singleThreadGet(username, filePath);
-//        inputStream = multiThreadGet(username, filePath);
         return inputStream;
     }
     
+    /** 单线程获取文件（效率还可以） */
     private InputStream singleThreadGet(String username, String filePath) {
         try {
-            return minioClientPlus.getFileStream(
-                    minioClientPlus.getBucketByUsername(username),
+            return minioUtils.getFileStream(
+                    getBucketByUsername(username),
                     filePath);
         } catch (Exception e) {
             e.printStackTrace();
@@ -237,14 +219,14 @@ public class FileSystemServiceImpl implements IFileSystemService {
         }
     }
     
+    /* 多线程获取文件（效率低，不知何故） */
+    /*
     private InputStream multiThreadGet(String username, String filePath){
-        final String bucketName = minioClientPlus.getBucketByUsername(username);
-        StatObjectResponse info = minioClientPlus.getFileStatusInfo(bucketName, filePath);
-        /*
-          如果是105字节的文件，10个线程执行，平均分配下，有：
-                ceil (105 / 10d) = 11.0, 但10个线程总共会操作110字节
-                因此，可以让前9个线程负责11字节(共99字节)，最后1个线程按需分配字节(需执行6字节)
-         */
+        final String bucketName = getBucketByUsername(username);
+        StatObjectResponse info = minioUtils.getFileStatusInfo(bucketName, filePath);
+          //如果是105字节的文件，10个线程执行，平均分配下，有：
+          //     ceil (105 / 10d) = 11.0, 但10个线程总共会操作110字节
+          //     因此，可以让前9个线程负责11字节(共99字节)，最后1个线程按需分配字节(需执行6字节)
         int corePoolSize = commonThreadPool.getCorePoolSize();
         long size = info.size();
         long sliceLength = (long) Math.ceil( size / (double) corePoolSize );
@@ -264,7 +246,7 @@ public class FileSystemServiceImpl implements IFileSystemService {
             Future<InputStream> future = CompletableFuture.supplyAsync(() -> {
                 log.info("[下载文件] {}正在下载字节范围在 [{}, {}] 之间的文件...",
                         Thread.currentThread().getName(), fixedOffset, fixedOffset + fixedLength - 1);
-                return minioClientPlus.getFileStream(bucketName, filePath, fixedOffset, fixedLength);
+                return minioUtils.getFileStream(bucketName, filePath, fixedOffset, fixedLength);
             }, commonThreadPool);
             futureList.add(future);
             offset += sliceLength;
@@ -284,105 +266,7 @@ public class FileSystemServiceImpl implements IFileSystemService {
         InputStream sequenceInputStream = new SequenceInputStream(Collections.enumeration(inputStreams));
         log.info("合并inputStream列表，共耗时: {} ms", System.currentTimeMillis() - startTime);
         return sequenceInputStream;
-    }
-
-    private InputStream multiThreadGet2(String username, String filePath){
-        final String bucketName = minioClientPlus.getBucketByUsername(username);
-        try {
-            StatObjectResponse info = minioClientPlus.getFileStatusInfo(bucketName, filePath);
-            /*
-              如果是105字节的文件，10个线程执行，平均分配下，有：
-                    ceil (105 / 10d) = 11.0, 但10个线程总共会操作110字节
-                    因此，可以让前9个线程负责11字节(共99字节)，最后1个线程按需分配字节(需执行6字节)
-             */
-            int corePoolSize = commonThreadPool.getCorePoolSize();
-            long size = info.size();
-            long sliceLength = (long) Math.ceil( size / (double) corePoolSize );
-            log.info("得到文件 {} 的长度: {}", filePath, size);
-            // 根据核心线程数，来分配文件下载任务
-            long offset = 0;
-            List<Future<InputStream>> futureList = new ArrayList<>();
-            for (int i = 0; i < corePoolSize; i++) {
-                long currLength = sliceLength;
-                // 如果超过文件容量，说明文件到达最后一段，处理这一段后，下一步必定会退出循环。
-                if (offset + sliceLength >= size) {
-                    currLength = size - offset;
-                }
-                // 使用隐式final变量，让lambda知道这两个变量不会再赋其他值
-                long fixedOffset = offset;
-                long fixedLength = currLength;
-                Future<InputStream> future = commonThreadPool.submit(() -> {
-                    log.info("[下载文件] {}正在下载字节范围在 [{}, {}] 之间的文件...", 
-                            Thread.currentThread().getName(), fixedOffset, fixedOffset + fixedLength - 1);
-                    return minioClientPlus.getFileStream(bucketName, filePath, fixedOffset, fixedLength);
-                });
-                futureList.add(future);
-                offset += sliceLength;
-            }
-            // 处理线程返回结果，如果每个线程执行耗时不同，则会等到所有线程执行完毕再处理
-            List<InputStream> inputStreams = futureList.stream().map(futureItem -> {
-                try {
-                    return futureItem.get();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new GlobalException(ResultCode.ERROR);
-                }
-            }).collect(Collectors.toList());
-            return new SequenceInputStream(Collections.enumeration(inputStreams));
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new GlobalException(ResultCode.ERROR);
-        }
-    }
-
-    private InputStream multiThreadGet3(String username, String filePath){
-        final String bucketName = minioClientPlus.getBucketByUsername(username);
-        try {
-            StatObjectResponse info = minioClientPlus.getFileStatusInfo(bucketName, filePath);
-            /*
-              如果是105字节的文件，10个线程执行，平均分配下，有：
-                    ceil (105 / 10d) = 11.0, 但10个线程总共会操作110字节
-                    因此，可以让前9个线程负责11字节(共99字节)，最后1个线程按需分配字节(需执行6字节)
-             */
-            int corePoolSize = commonThreadPool.getCorePoolSize();
-            long size = info.size();
-            long sliceLength = (long) Math.ceil( size / (double) corePoolSize );
-            log.info("得到文件 {} 的长度: {}", filePath, size);
-            // 根据核心线程数，来分配文件下载任务
-            long offset = 0;
-            List<Future<InputStream>> futureList = new ArrayList<>();
-            for (int i = 0; i < corePoolSize; i++) {
-                long currLength = sliceLength;
-                // 如果超过文件容量，说明文件到达最后一段，处理这一段后，下一步必定会退出循环。
-                if (offset + sliceLength >= size) {
-                    currLength = size - offset;
-                }
-                // 使用隐式final变量，让lambda知道这两个变量不会再赋其他值
-                long fixedOffset = offset;
-                long fixedLength = currLength;
-                Future<InputStream> future = commonThreadPool.submit(() -> {
-                    log.info("[下载文件] {}正在下载字节范围在 [{}, {}] 之间的文件...",
-                            Thread.currentThread().getName(), fixedOffset, fixedOffset + fixedLength - 1);
-                    return minioClientPlus.getFileStream(bucketName, filePath, fixedOffset, fixedLength);
-                });
-                futureList.add(future);
-                offset += sliceLength;
-            }
-            // 处理线程返回结果，如果每个线程执行耗时不同，则会等到所有线程执行完毕再处理
-            List<InputStream> inputStreams = futureList.stream().map(futureItem -> {
-                try {
-                    return futureItem.get();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new GlobalException(ResultCode.ERROR);
-                }
-            }).collect(Collectors.toList());
-            return new SequenceInputStream(Collections.enumeration(inputStreams));
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new GlobalException(ResultCode.ERROR);
-        }
-    }
+    }*/
 
     @Override
     public void deleteByPath(User user, String virtualPath, Integer type) {
@@ -402,7 +286,7 @@ public class FileSystemServiceImpl implements IFileSystemService {
         }
         // 删除完毕，开始删除实际存储的内容（未完成）
         try {
-            minioClientPlus.removeFile(minioClientPlus.getBucketByUsername(
+            minioUtils.removeFile(getBucketByUsername(
                     user.getUsername()), fileInfo.getRealPath());
         } catch (Exception e) {
             e.printStackTrace();
@@ -458,6 +342,13 @@ public class FileSystemServiceImpl implements IFileSystemService {
     private static String generateRealPath(String virtualPath) {
         return DIVIDE + DateUtils.getCurrFormatDateStr("yyyy/MM/dd") + virtualPath;
     }
-
-
+    
+    /**
+     * 通过用户名获取Minio的桶名
+     * @param username 用户名
+     * @return 桶名
+     */
+    private String getBucketByUsername(String username) {
+        return bucketNamePrefix + username;
+    }
 }

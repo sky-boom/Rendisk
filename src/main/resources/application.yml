@@ -39,6 +39,15 @@ mybatis:
 #  configuration:
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
+
+# minio配置
+minio-util:
+  url: http://192.168.12.133:9000 #换成自己的minio服务端地址
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name-prefix: rendisk- # 桶前缀名
+
+
 # 自定义参数
 my-config:
   # 认证相关配置
@@ -51,14 +60,6 @@ my-config:
     refresh-token-expire-time: 90000
     # shiro内置缓存过期时间（不明白，先设置成refresh的）
     shiro-cache-expire-time: 900000
-    
-  # minio自定义配置
-  minio:
-    url: http://192.168.12.133:9000 #换成自己的minio服务端地址
-    access-key: minioadmin
-    secret-key: minioadmin
-    bucket-name-prefix: rendisk- # 桶前缀名
-    temp-bucket-name: temp-dir
 
   # elasticsearch自定义配置
   elasticsearch:

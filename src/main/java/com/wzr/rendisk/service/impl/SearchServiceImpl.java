@@ -1,7 +1,7 @@
 package com.wzr.rendisk.service.impl;
 
+import com.wzr.minio.client.MinioUtils;
 import com.wzr.rendisk.config.es.ElasticSearchClient;
-import com.wzr.rendisk.config.minio.MinioClientPlus;
 import com.wzr.rendisk.core.exception.GlobalException;
 import com.wzr.rendisk.dto.SearchDto;
 import com.wzr.rendisk.entity.DocumentObj;
@@ -51,11 +51,13 @@ public class SearchServiceImpl implements ISearchService {
     
     @Value("${my-config.elasticsearch.doc-index}")
     private String docIndex;
+    @Value("${minio-util.bucket-name-prefix}")
+    private String bucketNamePrefix;
     
     @Autowired
     private IFileSystemService fileSystemService;
     @Autowired
-    private MinioClientPlus minioClientPlus;
+    private MinioUtils minioClientPlus;
     @Autowired
     private ElasticSearchClient esClient;
     
@@ -71,7 +73,7 @@ public class SearchServiceImpl implements ISearchService {
                 continue;
             }
             try (InputStream inputStream = minioClientPlus.getFileStream(
-                    minioClientPlus.getBucketByUsername(user.getUsername()),
+                    getBucketByUsername(user.getUsername()),
                     fileInfo.getRealPath())) {
                 String fileName = fileInfo.getFileName();
                 DocumentObj doc = new DocumentObj(user.getId(), fileInfo.getId(),
@@ -248,5 +250,14 @@ public class SearchServiceImpl implements ISearchService {
             e.printStackTrace();
             throw new GlobalException();
         }
+    }
+
+    /**
+     * 通过用户名获取Minio的桶名
+     * @param username 用户名
+     * @return 桶名
+     */
+    private String getBucketByUsername(String username) {
+        return bucketNamePrefix + username;
     }
 }

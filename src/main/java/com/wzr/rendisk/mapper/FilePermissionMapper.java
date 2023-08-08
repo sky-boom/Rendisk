@@ -1,7 +1,9 @@
 package com.wzr.rendisk.mapper;
 
 import com.wzr.rendisk.entity.FilePermission;
+import org.apache.ibatis.annotations.Mapper;
 
+@Mapper
 public interface FilePermissionMapper {
     int deleteByPrimaryKey(Long id);
 

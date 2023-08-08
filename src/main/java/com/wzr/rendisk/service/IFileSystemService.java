@@ -56,7 +56,7 @@ public interface IFileSystemService {
     void uploadFile(User user, FileAddDto fileAddDto);
 
     /**
-     * 大文件分片上传
+     * 大文件分片上传 (单线程)
      * @param user 用户
      * @param fileAddDto 含文件file、分片索引sliceIndex、分片总数totalPieces、整体文件md5
      */

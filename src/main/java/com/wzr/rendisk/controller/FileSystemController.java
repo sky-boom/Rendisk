@@ -1,6 +1,6 @@
 package com.wzr.rendisk.controller;
 
-import com.wzr.rendisk.config.minio.MinioClientPlus;
+import com.wzr.minio.client.MinioUtils;
 import com.wzr.rendisk.core.constant.FileSysConstant;
 import com.wzr.rendisk.core.exception.GlobalException;
 import com.wzr.rendisk.core.result.GlobalResult;
@@ -40,7 +40,7 @@ public class FileSystemController {
     @Autowired
     private IFileSystemService fileSystemService;
     @Autowired
-    private MinioClientPlus minioClientPlus;
+    private MinioUtils minioUtils;
     
     /**
      * 【创建目录】

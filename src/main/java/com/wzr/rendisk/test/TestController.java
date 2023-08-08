@@ -1,6 +1,6 @@
 package com.wzr.rendisk.test;
 
-import com.wzr.rendisk.config.minio.MinioClientPlus;
+import com.wzr.minio.client.MinioUtils;
 import com.wzr.rendisk.core.exception.GlobalException;
 import com.wzr.rendisk.core.result.GlobalResult;
 import com.wzr.rendisk.core.result.ResultCode;
@@ -39,7 +39,7 @@ import java.util.List;
 public class TestController {
     
     @Autowired
-    private MinioClientPlus minioClientPlus;
+    private MinioUtils minioClientPlus;
     @Autowired
     private IAuthService authService;
     

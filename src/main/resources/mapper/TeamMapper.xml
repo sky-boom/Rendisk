@@ -12,17 +12,31 @@
   <sql id="Base_Column_List">
     id, team_name, team_describe, captain_id, create_time, update_time
   </sql>
+  
+  <update id="updateSelective">
+    UPDATE `t_team` SET
+    <trim suffixOverrides=",">
+      <if test="id != null"> id = #{record.id}, </if>
+      <if test="teamName != null"> team_name = #{record.teamName}, </if>
+      <if test="teamDescribe != null"> team_describe = #{record.teamDescribe}, </if>
+      <if test="captainId != null"> captain_id = #{record.captainId}, </if>
+    </trim>
+    WHERE `id` = #{record.id}
+  </update>
+
   <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
     select 
     <include refid="Base_Column_List" />
     from t_team
     where id = #{id,jdbcType=BIGINT}
   </select>
+  
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
     delete from t_team
     where id = #{id,jdbcType=BIGINT}
   </delete>
-  <insert id="insert" parameterType="com.wzr.rendisk.entity.TeamInfo">
+  
+  <insert id="insert" parameterType="com.wzr.rendisk.entity.TeamInfo" useGeneratedKeys="true">
     insert into t_team (id, team_name, team_describe, 
       captain_id, create_time, update_time
       )
@@ -30,47 +44,24 @@
       #{captainId,jdbcType=BIGINT}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}
       )
   </insert>
+  
   <insert id="insertSelective" parameterType="com.wzr.rendisk.entity.TeamInfo">
     insert into t_team
     <trim prefix="(" suffix=")" suffixOverrides=",">
-      <if test="id != null">
-        id,
-      </if>
-      <if test="teamName != null">
-        team_name,
-      </if>
-      <if test="teamDescribe != null">
-        team_describe,
-      </if>
-      <if test="captainId != null">
-        captain_id,
-      </if>
-      <if test="createTime != null">
-        create_time,
-      </if>
-      <if test="updateTime != null">
-        update_time,
-      </if>
+      <if test="id != null"> id, </if>
+      <if test="teamName != null"> team_name, </if>
+      <if test="teamDescribe != null"> team_describe, </if>
+      <if test="captainId != null"> captain_id, </if>
+      <if test="createTime != null"> create_time, </if>
+      <if test="updateTime != null"> update_time, </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
-      <if test="id != null">
-        #{id,jdbcType=BIGINT},
-      </if>
-      <if test="teamName != null">
-        #{teamName,jdbcType=VARCHAR},
-      </if>
-      <if test="teamDescribe != null">
-        #{teamDescribe,jdbcType=VARCHAR},
-      </if>
-      <if test="captainId != null">
-        #{captainId,jdbcType=BIGINT},
-      </if>
-      <if test="createTime != null">
-        #{createTime,jdbcType=TIMESTAMP},
-      </if>
-      <if test="updateTime != null">
-        #{updateTime,jdbcType=TIMESTAMP},
-      </if>
+      <if test="id != null"> #{id,jdbcType=BIGINT}, </if>
+      <if test="teamName != null"> #{teamName,jdbcType=VARCHAR}, </if>
+      <if test="teamDescribe != null"> #{teamDescribe,jdbcType=VARCHAR}, </if>
+      <if test="captainId != null"> #{captainId,jdbcType=BIGINT}, </if>
+      <if test="createTime != null"> #{createTime,jdbcType=TIMESTAMP}, </if>
+      <if test="updateTime != null"> #{updateTime,jdbcType=TIMESTAMP}, </if>
     </trim>
   </insert>
 </mapper>
