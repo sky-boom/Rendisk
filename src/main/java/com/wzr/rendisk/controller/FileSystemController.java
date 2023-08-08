@@ -91,13 +91,16 @@ public class FileSystemController {
         // 无异常时，即返回成功。
         return GlobalResult.success();
     }
-
+    
     /**
      * 分片上传
      * 作者：爱玩游戏的白白狗 https://www.bilibili.com/read/cv20466281/ 出处：bilibili
-     * @return 0~n 前端上传对应分片序号
-     * -1 上传完成
-     * -2 文件md5对不上
+     * @param user 用户对象
+     * @param fileAddDto file: 分片文件, 
+     *                   currIndex: 当前分片索引, 
+     *                   totalPieces: 分片总数，
+     *                   md5: 文件md5
+     * @return 前端需上传的分片序号（-1表示上传完成）
      */
     @PostMapping("/file/big/upload")
     public ResultData<String> uploadBigFile(User user, BigFileAddDto fileAddDto) {

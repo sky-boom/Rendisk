@@ -79,7 +79,6 @@
 <!--			<artifactId>minio</artifactId>-->
 <!--			<version>8.2.1</version>-->
 <!--		</dependency>-->
-
 		<dependency>
 			<groupId>com.github.sky-boom</groupId>
 			<artifactId>minio-spring-boot-starter</artifactId>

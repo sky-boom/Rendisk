@@ -1,5 +1,5 @@
 # 项目简介
-此项目是一个基于 SpringBoot + MyBatis + Minio + ElasticSearch 的文档共享系统，用户能够以“团队”为单位进行文档资源的共享。
+此项目是一个基于 SpringBoot + MyBatis + MySQL + Minio + ElasticSearch 的文档共享系统，用户能够以“团队”为单位进行文档资源的共享。
 
 
 注：此项目是一个后端项目，此处不提供前端项目。
@@ -17,7 +17,7 @@
 - [x] 文档上传（普通上传 + 分片上传）
 - [x] 文档断点续传（基于Minio）
 - [ ] 文档极速秒传（基于MD5）
-- [x] 文档全文检索（基于Elasticsearch）
+- [ ] 文档全文检索（基于Elasticsearch）完成了一半。
 
 （3）文档分享
 
